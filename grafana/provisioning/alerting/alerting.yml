@@ -1,1 +1,174 @@
 apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: availability-multiples
+    folder: Monitoring Lab
+    interval: 30s
+    rules:
+      - uid: availability_critical_situation
+        title: 임계상황 발생
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              editorMode: code
+              expr: (max(lab_node_count{job="app"}) / (max(lab_node_count{job="app"}) - 1)) > bool (max(lab_capacity_limit_rps{job="app"}) / clamp_min(sum(rate(http_requests_total{job="app"}[5m])), 0.001))
+              instant: true
+              intervalMs: 1000
+              legendFormat: critical
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: []
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0.5
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 1m
+        annotations:
+          summary: 부하증가배수가 최대가용배수보다 큽니다.
+          description: 다른 노드 장애 시 현재 노드가 증가한 부하를 처리하지 못할 것으로 예측됩니다.
+        labels:
+          severity: critical
+          signal: availability-multiple
+        isPaused: false
+      - uid: availability_margin_low
+        title: 임계 여유 부족
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              editorMode: code
+              expr: (max(lab_capacity_limit_rps{job="app"}) / clamp_min(sum(rate(http_requests_total{job="app"}[5m])), 0.001)) - (max(lab_node_count{job="app"}) / (max(lab_node_count{job="app"}) - 1))
+              instant: true
+              intervalMs: 1000
+              legendFormat: margin
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: []
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0.2
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 1m
+        annotations:
+          summary: 최대가용배수와 부하증가배수의 차이가 작습니다.
+          description: 임계 여유가 0.2 미만입니다. 트래픽 증가 또는 노드 장애 시 임계상황으로 전환될 수 있습니다.
+        labels:
+          severity: warning
+          signal: availability-margin
+        isPaused: false

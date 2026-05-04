@@ -21,6 +21,7 @@ Dashboards:
 - Prometheus Overview
 - App Service Metrics
 - SRE Golden Signals
+- Availability Multiples
 
 Default Grafana login:
 
@@ -71,4 +72,37 @@ rate(http_requests_total{job="app"}[5m])
 histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="app"}[5m])) by (le, route))
 sum(rate(http_requests_total{job="app",status_code=~"5.."}[5m])) / clamp_min(sum(rate(http_requests_total{job="app"}[5m])), 0.001)
 nodejs_eventloop_lag_p99_seconds{job="app"}
+```
+
+## Availability Multiple Practice
+
+The sample app exposes lab-only metrics for practicing critical-situation detection:
+
+```promql
+lab_capacity_limit_rps{job="app"}
+lab_node_count{job="app"}
+```
+
+The `Availability Multiples` dashboard uses these queries:
+
+```promql
+# 최대가용배수 = 한계 사용량 / 현재 사용량
+max(lab_capacity_limit_rps{job="app"}) / clamp_min(sum(rate(http_requests_total{job="app"}[5m])), 0.001)
+
+# 부하증가배수 = n / (n - 1)
+max(lab_node_count{job="app"}) / (max(lab_node_count{job="app"}) - 1)
+
+# 임계상황 = 부하증가배수 > 최대가용배수
+(max(lab_node_count{job="app"}) / (max(lab_node_count{job="app"}) - 1)) > bool (max(lab_capacity_limit_rps{job="app"}) / clamp_min(sum(rate(http_requests_total{job="app"}[5m])), 0.001))
+```
+
+Generate enough traffic to trigger the critical-situation alert:
+
+```sh
+for i in $(seq 1 120); do
+  curl -s "http://localhost:8080/work?delayMs=50" >/dev/null &
+  curl -s "http://localhost:8080/work?delayMs=50" >/dev/null &
+  sleep 0.2
+done
+wait
 ```

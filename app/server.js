@@ -3,6 +3,8 @@ import client from "prom-client";
 
 const app = express();
 const port = Number(process.env.PORT || 8080);
+const labNodeCount = Math.max(Number(process.env.LAB_NODE_COUNT || 3), 2);
+const labCapacityLimitRps = Number(process.env.LAB_CAPACITY_LIMIT_RPS || 2);
 
 const register = new client.Registry();
 client.collectDefaultMetrics({ register });
@@ -21,6 +23,21 @@ const httpRequestDurationSeconds = new client.Histogram({
   buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5],
   registers: [register]
 });
+
+const labNodeCountGauge = new client.Gauge({
+  name: "lab_node_count",
+  help: "Simulated number of nodes in the distributed service group.",
+  registers: [register]
+});
+
+const labCapacityLimitRpsGauge = new client.Gauge({
+  name: "lab_capacity_limit_rps",
+  help: "Simulated per-node request capacity limit for availability-multiple practice.",
+  registers: [register]
+});
+
+labNodeCountGauge.set(labNodeCount);
+labCapacityLimitRpsGauge.set(labCapacityLimitRps);
 
 app.use((req, res, next) => {
   if (req.path === "/metrics") {

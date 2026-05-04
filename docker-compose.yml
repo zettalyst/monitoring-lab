@@ -17,6 +17,9 @@ services:
   app:
     build:
       context: ./app
+    environment:
+      LAB_CAPACITY_LIMIT_RPS: "2"
+      LAB_NODE_COUNT: "3"
     ports:
       - "8080:8080"
     restart: unless-stopped
