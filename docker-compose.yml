@@ -14,11 +14,19 @@ services:
       - "9100:9100"
     restart: unless-stopped
 
+  app:
+    build:
+      context: ./app
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
   grafana:
     image: grafana/grafana-oss
     depends_on:
       - prometheus
       - node-exporter
+      - app
     ports:
       - "3000:3000"
     volumes:
