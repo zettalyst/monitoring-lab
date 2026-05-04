@@ -67,6 +67,13 @@ app.get("/work", async (req, res) => {
   });
 });
 
+app.get("/error", (_req, res) => {
+  res.status(500).json({
+    status: "error",
+    message: "intentional error for monitoring practice"
+  });
+});
+
 app.get("/metrics", async (_req, res) => {
   res.set("Content-Type", register.contentType);
   res.end(await register.metrics());
