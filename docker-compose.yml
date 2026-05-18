@@ -1,11 +1,30 @@
 services:
   prometheus:
     image: prom/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=45d
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+    depends_on:
+      - synthetic-traffic
     ports:
       - "9090:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
+    restart: unless-stopped
+
+  synthetic-traffic:
+    image: python:3.12-alpine
+    command: ["python", "/app/traffic_exporter.py"]
+    environment:
+      PORT: "8000"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./synthetic_traffic:/app:ro
     restart: unless-stopped
 
   node-exporter:
@@ -30,6 +49,7 @@ services:
       - prometheus
       - node-exporter
       - app
+      - synthetic-traffic
     ports:
       - "3000:3000"
     volumes:

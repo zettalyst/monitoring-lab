@@ -16,6 +16,8 @@ Node Exporter: http://localhost:9100/metrics
 
 Grafana: http://localhost:3000
 
+Synthetic app metrics: http://localhost:8000/metrics
+
 Dashboards:
 
 - Prometheus Overview
@@ -44,6 +46,57 @@ docker compose down -v
 
 Edit `prometheus/prometheus.yml` and add another entry under `scrape_configs`.
 For a service running directly on the host, Docker Desktop can usually reach it through `host.docker.internal`.
+
+## 3-week Same-time Median Dashboard
+
+This lab includes a synthetic `seasonal-app` target that exposes `http_requests_total`
+for multiple services with weekday and time-of-day seasonality. Prometheus is
+configured with 45 days of retention so the dashboard can query samples from
+1, 2, and 3 weeks ago.
+
+Backfill historical samples into the Prometheus volume:
+
+```sh
+./scripts/backfill-seasonal-traffic.sh
+```
+
+Then open Grafana and select the `Traffic Seasonality - 3 Week Median`
+dashboard. The core baseline query is:
+
+```promql
+quantile_over_time(
+  0.5,
+  (
+    sum by (service) (
+      rate(http_requests_total[5m])
+    )
+  )[2w:1w] offset 1w
+)
+```
+
+The dashboard range panels use an equivalent explicit-offset expression so the
+baseline follows each Grafana timestamp instead of being affected by subquery
+step alignment:
+
+```promql
+quantile by (service) (
+  0.5,
+  label_replace(
+    sum by (service) (rate(http_requests_total[5m] offset 1w)),
+    "seasonal_week", "1w", "service", ".*"
+  )
+  or
+  label_replace(
+    sum by (service) (rate(http_requests_total[5m] offset 2w)),
+    "seasonal_week", "2w", "service", ".*"
+  )
+  or
+  label_replace(
+    sum by (service) (rate(http_requests_total[5m] offset 3w)),
+    "seasonal_week", "3w", "service", ".*"
+  )
+)
+```
 
 ## Generate Sample App Metrics
 

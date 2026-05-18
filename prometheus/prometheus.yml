@@ -3,6 +3,10 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
+  - job_name: seasonal-app
+    static_configs:
+      - targets: ["synthetic-traffic:8000"]
+
   - job_name: prometheus
     static_configs:
       - targets: ["prometheus:9090"]
