@@ -172,3 +172,410 @@ groups:
           severity: warning
           signal: availability-margin
         isPaused: false
+  - orgId: 1
+    name: SRE301 Page Signals
+    folder: SRE301
+    interval: 10s
+    rules:
+      - uid: sre301-i1-high-latency
+        title: I1 HighLatency
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              editorMode: code
+              expr: histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job="setlog", uri=~"/api/.*", status!~"5.."}[2m])) by (le, method, uri))
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: max
+              refId: B
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+              conditions:
+                - evaluator:
+                    params:
+                      - 0.8
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+        dashboardUid: sre301-golden-signals
+        panelId: 101
+        noDataState: OK
+        execErrState: Error
+        for: 10s
+        annotations:
+          __dashboardUid__: sre301-golden-signals
+          __panelId__: "101"
+          summary: "I1 page signal: API p95 latency is above 800ms"
+          description: "Users are waiting on non-5xx SetLog API journeys. Confirm DB pool pending and keep error ratio low; after mitigation, this resolves when p95 returns below 800ms."
+        labels:
+          incident: "1"
+          severity: page
+          signal: latency
+          training: sre301
+        isPaused: false
+
+      - uid: sre301-i2-too-many-5xx
+        title: I2 TooMany5xx
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              editorMode: code
+              expr: (sum(rate(http_server_requests_seconds_count{job="setlog", uri=~"/api/.*", status=~"5.."}[2m])) or vector(0)) / clamp_min((sum(rate(http_server_requests_seconds_count{job="setlog", uri=~"/api/.*"}[2m])) or vector(0)), 0.001)
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+              conditions:
+                - evaluator:
+                    params:
+                      - 0.05
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+        dashboardUid: sre301-golden-signals
+        panelId: 201
+        noDataState: OK
+        execErrState: Error
+        for: 10s
+        annotations:
+          __dashboardUid__: sre301-golden-signals
+          __panelId__: "201"
+          summary: "I2 page signal: API 5xx ratio is above 5%"
+          description: "Users are receiving failed responses. Confirm dependency state as diagnostic evidence; after mitigation, this resolves when 5xx ratio falls below 5%."
+        labels:
+          incident: "2"
+          severity: page
+          signal: errors
+          training: sre301
+        isPaused: false
+
+      - uid: sre301-i3-render-failures
+        title: I3 RenderFailuresHigh
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              editorMode: code
+              expr: (sum(rate(setlog_vlog_render_jobs_total{job="setlog", result="failure", reason="disk"}[2m])) or vector(0)) / clamp_min((sum(rate(setlog_vlog_render_jobs_total{job="setlog"}[2m])) or vector(0)), 0.001)
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+              conditions:
+                - evaluator:
+                    params:
+                      - 0.2
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+        dashboardUid: sre301-golden-signals
+        panelId: 301
+        noDataState: OK
+        execErrState: Error
+        for: 10s
+        annotations:
+          __dashboardUid__: sre301-golden-signals
+          __panelId__: "301"
+          summary: "I3 page signal: disk-related daily vlog render failure ratio is above 20%"
+          description: "Users cannot create daily vlog results because render artifact writes are failing. Confirm render debug log bytes and disk evidence; after mitigation, this resolves when disk-related render failures stop."
+        labels:
+          incident: "3"
+          journey: render
+          severity: page
+          signal: errors
+          training: sre301
+        isPaused: false
+
+      - uid: sre301-i4-render-latency
+        title: I4 RenderLatencyHigh
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              editorMode: code
+              expr: histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job="setlog", uri="/api/render-jobs"}[2m])) by (le))
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+              conditions:
+                - evaluator:
+                    params:
+                      - 2
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+        dashboardUid: sre301-golden-signals
+        panelId: 401
+        noDataState: OK
+        execErrState: Error
+        for: 10s
+        annotations:
+          __dashboardUid__: sre301-golden-signals
+          __panelId__: "401"
+          summary: "I4 page signal: daily vlog render p95 latency is above 2s"
+          description: "Users are waiting for render responses. Confirm CPU pressure and disk guardrail; after mitigation, this resolves when render p95 drops below 2s."
+        labels:
+          incident: "4"
+          journey: render
+          severity: page
+          signal: latency
+          training: sre301
+        isPaused: false
+
+      - uid: sre301-i4-render-backlog
+        title: I4 RenderBacklog
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              editorMode: code
+              expr: avg_over_time(setlog_vlog_render_queue_depth{job="setlog"}[1m])
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+              conditions:
+                - evaluator:
+                    params:
+                      - 0.5
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+        dashboardUid: sre301-golden-signals
+        panelId: 402
+        noDataState: OK
+        execErrState: Error
+        for: 10s
+        annotations:
+          __dashboardUid__: sre301-golden-signals
+          __panelId__: "402"
+          summary: "I4 page signal: daily vlog render queue depth is above 0.5"
+          description: "Render work is consistently waiting in queue. Confirm CPU pressure as diagnostic evidence; after mitigation, this resolves when average queue depth returns below 0.5."
+        labels:
+          incident: "4"
+          journey: render
+          severity: page
+          signal: saturation
+          training: sre301
+        isPaused: false

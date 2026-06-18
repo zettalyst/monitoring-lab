@@ -1,0 +1,144 @@
+groups:
+  - name: sre301-symptom-alerts
+    interval: 10s
+    rules:
+      - alert: HighLatency
+        expr: |
+          max(histogram_quantile(
+            0.95,
+            sum(rate(http_server_requests_seconds_bucket{job="setlog", uri=~"/api/.*", status!~"5.."}[3m])) by (le, method, uri)
+          )) > 0.8
+        for: 1m
+        labels:
+          severity: page
+          signal: latency
+        annotations:
+          summary: "p95 API latency is above 800ms"
+          description: "Symptom alert: users are waiting on non-5xx SetLog API journeys. Use DB pool, CPU, logs, and dependency state as supporting signals during triage."
+
+      - alert: TooMany5xx
+        expr: |
+          (
+            sum(rate(http_server_requests_seconds_count{job="setlog", uri=~"/api/.*", status=~"5.."}[3m]))
+            /
+            clamp_min(sum(rate(http_server_requests_seconds_count{job="setlog", uri=~"/api/.*"}[3m])), 0.001)
+          ) > 0.05
+        for: 1m
+        labels:
+          severity: page
+          signal: errors
+        annotations:
+          summary: "5xx error ratio is above 5%"
+          description: "Symptom alert: users are receiving failed responses. Confirm start time and blast radius before investigating dependency causes."
+
+      - alert: TrafficDrop
+        expr: |
+          sum(rate(http_server_requests_seconds_count{job="setlog", uri=~"/api/.*"}[5m])) < 0.05
+        for: 3m
+        labels:
+          severity: ticket
+          signal: traffic
+        annotations:
+          summary: "API traffic is lower than the training baseline"
+          description: "Symptom alert: no user-visible traffic is reaching the service. This may be expected outside the baseline traffic exercise."
+
+      - alert: RenderLatencyHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(http_server_requests_seconds_bucket{job="setlog", uri="/api/render-jobs"}[3m])) by (le)
+          ) > 2
+        for: 30s
+        labels:
+          severity: page
+          signal: latency
+          journey: render
+        annotations:
+          summary: "Daily vlog render API latency is high"
+          description: "Symptom alert: users are waiting for daily vlog render responses. Compare render queue, CPU, disk, and service logs after confirming impact."
+
+      - alert: RenderFailuresHigh
+        expr: |
+          (
+            sum(rate(setlog_vlog_render_jobs_total{job="setlog", result="failure", reason="disk"}[3m]))
+            /
+            clamp_min(sum(rate(setlog_vlog_render_jobs_total{job="setlog"}[3m])), 0.001)
+          ) > 0.2
+        for: 30s
+        labels:
+          severity: page
+          signal: errors
+          journey: render
+        annotations:
+          summary: "Disk-related daily vlog render failure ratio is high"
+          description: "Symptom alert: users cannot create daily vlog results because render artifact writes are failing. Use render debug log bytes, disk evidence, CPU, and logs as supporting signals."
+
+      - alert: RenderBacklog
+        expr: |
+          setlog_vlog_render_queue_depth{job="setlog"} > 0
+        for: 30s
+        labels:
+          severity: page
+          signal: saturation
+          journey: render
+        annotations:
+          summary: "Daily vlog render queue has backlog"
+          description: "Symptom alert: render work is waiting in queue, so users may receive daily vlog results late. Use CPU and disk panels as supporting evidence."
+
+  - name: sre301-diagnostic-signals
+    interval: 10s
+    rules:
+      - alert: DbPoolPendingDiagnostic
+        expr: |
+          hikaricp_connections_pending{job="setlog"} > 0
+        for: 30s
+        labels:
+          severity: info
+          signal: diagnostic
+        annotations:
+          summary: "Diagnostic: DB connection pool has pending requests"
+          description: "Supporting signal only. Page on user-visible latency, then use this to evaluate a DB pool saturation hypothesis."
+
+      - alert: MysqlExporterDownDiagnostic
+        expr: |
+          up{job="mysqld-exporter"} == 0
+        for: 30s
+        labels:
+          severity: info
+          signal: diagnostic
+        annotations:
+          summary: "Diagnostic: mysqld-exporter target is down"
+          description: "Supporting signal only. Page on 5xx ratio or availability symptoms, then use this to evaluate a dependency outage hypothesis."
+
+      - alert: DiskPressureDiagnostic
+        expr: |
+          setlog_render_debug_log_bytes{job="setlog"} > 0
+        for: 30s
+        labels:
+          severity: info
+          signal: diagnostic
+        annotations:
+          summary: "Diagnostic: SetLog render debug log is retaining bytes"
+          description: "Supporting signal only. Page on render failures or latency, then use this to evaluate a disk pressure hypothesis."
+
+      - alert: CpuHighDiagnostic
+        expr: |
+          (
+            sum(rate(container_cpu_usage_seconds_total{job="cadvisor", container_label_com_docker_compose_service="setlog"}[2m]))
+            /
+            clamp_min(
+              sum(
+                container_spec_cpu_quota{job="cadvisor", container_label_com_docker_compose_service="setlog"}
+                /
+                container_spec_cpu_period{job="cadvisor", container_label_com_docker_compose_service="setlog"}
+              ),
+              0.001
+            )
+          ) > 0.6
+        for: 2m
+        labels:
+          severity: info
+          signal: diagnostic
+        annotations:
+          summary: "Diagnostic: setlog container CPU pressure is elevated"
+          description: "Supporting signal only. Docker Desktop cAdvisor reports the saturated drill around 60-80% of quota, so use this with render latency and queue depth."

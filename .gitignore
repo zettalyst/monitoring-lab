@@ -1,2 +1,20 @@
+# OS / editor noise
 .DS_Store
+
+# Build outputs
+.gradle/
+build/
+demo-service/.gradle/
+demo-service/build/
+demo-service/bin/
+__pycache__/
+*.pyc
+
+# Local packaging / scratch
 *.zip
+.omc/
+_workspace/
+
+# Generated course artifacts not committed on main
+slides/
+answers/

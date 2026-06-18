@@ -1,10 +1,132 @@
 services:
+  setlog:
+    build:
+      context: ./demo-service
+    cpus: "1.0"
+    mem_limit: 512m
+    mem_reservation: 256m
+    pids_limit: 256
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/setlog?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: setlog
+      SPRING_DATASOURCE_PASSWORD: setlog
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+    tmpfs:
+      - /tmp:size=96m,mode=1777
+    restart: unless-stopped
+
+  setlog-netem:
+    image: nicolaka/netshoot:latest
+    depends_on:
+      setlog:
+        condition: service_healthy
+    network_mode: "service:setlog"
+    cap_add:
+      - NET_ADMIN
+    environment:
+      SETLOG_NET_RATE: ${SETLOG_NET_RATE:-20mbit}
+      SETLOG_NET_BURST: ${SETLOG_NET_BURST:-64kb}
+      SETLOG_NET_LATENCY: ${SETLOG_NET_LATENCY:-50ms}
+    entrypoint:
+      - sh
+    command:
+      - -ec
+      - |
+        tc qdisc replace dev eth0 root tbf rate "$${SETLOG_NET_RATE}" burst "$${SETLOG_NET_BURST}" latency "$${SETLOG_NET_LATENCY}"
+        tc qdisc show dev eth0
+        tail -f /dev/null
+    healthcheck:
+      test: ["CMD-SHELL", "tc qdisc show dev eth0 | grep -q tbf"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    restart: unless-stopped
+
+  baseline-traffic:
+    image: curlimages/curl:8.11.1
+    depends_on:
+      setlog:
+        condition: service_healthy
+      setlog-netem:
+        condition: service_healthy
+    environment:
+      BASE_URL: http://setlog:8080
+      BASELINE_LOOP_COUNT: "480"
+      BASELINE_LOOP_SLEEP_SECONDS: "0.03"
+      BASELINE_LOOP_PAUSE_SECONDS: "3"
+      RENDER_EVERY: "4"
+      ALLOW_FAILURES: "1"
+    volumes:
+      - ./scripts:/scripts:ro
+    entrypoint:
+      - sh
+    command:
+      - -ec
+      - |
+        FAULT_CLEAR_SKIP_COMPOSE=1 BASE_URL=http://setlog:8080 sh /scripts/fault-clear.sh
+        sh /scripts/baseline-loop.sh
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.4
+    cpus: "0.75"
+    mem_limit: 768m
+    mem_reservation: 384m
+    environment:
+      MYSQL_DATABASE: setlog
+      MYSQL_USER: setlog
+      MYSQL_PASSWORD: setlog
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  mysqld-exporter:
+    image: prom/mysqld-exporter:v0.14.0
+    command:
+      - --collect.global_status
+      - --collect.info_schema.innodb_metrics
+    environment:
+      DATA_SOURCE_NAME: exporter:exporter@(mysql:3306)/
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "9104:9104"
+    restart: unless-stopped
+
   prometheus:
     image: prom/prometheus
+    depends_on:
+      - setlog
+      - cadvisor
+      - node-exporter
+      - mysqld-exporter
+      - app
     ports:
       - "9090:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
       - prometheus_data:/prometheus
     restart: unless-stopped
 
@@ -21,14 +143,36 @@ services:
       LAB_CAPACITY_LIMIT_RPS: "2"
       LAB_NODE_COUNT: "3"
     ports:
-      - "8080:8080"
+      - "8082:8080"
+    restart: unless-stopped
+
+  cadvisor:
+    image: ghcr.io/google/cadvisor:v0.57.0
+    command:
+      - --containerd=/rootfs/run/containerd/containerd.sock
+      - --docker_only=true
+      - --store_container_labels=false
+      - --whitelisted_container_labels=com.docker.compose.project,com.docker.compose.service
+    privileged: true
+    ports:
+      - "8081:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /var/lib/desktop-containerd:/var/lib/desktop-containerd:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     restart: unless-stopped
 
   grafana:
     image: grafana/grafana-oss
     depends_on:
       - prometheus
+      - setlog
+      - cadvisor
       - node-exporter
+      - mysqld-exporter
       - app
     ports:
       - "3000:3000"
@@ -39,5 +183,6 @@ services:
     restart: unless-stopped
 
 volumes:
+  mysql_data:
   prometheus_data:
   grafana_data:
