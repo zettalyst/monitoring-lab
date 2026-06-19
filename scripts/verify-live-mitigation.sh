@@ -67,14 +67,14 @@ wait_fault_field() {
 
 mysql_holder_ids() {
   docker compose exec -T mysql mysql -N -uroot -proot -e \
-    "SELECT ID FROM information_schema.PROCESSLIST WHERE ID <> CONNECTION_ID() AND INFO LIKE '%SRE301_I1_DB_POOL_HOLDER%';"
+    "SELECT ID FROM information_schema.PROCESSLIST WHERE ID <> CONNECTION_ID() AND INFO LIKE '%SETLOG_I1_DB_POOL_HOLDER%';"
 }
 
 kill_mysql_holders() {
   ids="$(mysql_holder_ids)"
   if [ -z "$ids" ]; then
     docker compose exec -T mysql mysql -uroot -proot -e "SHOW FULL PROCESSLIST;" >&2 || true
-    fail "no SRE301_I1_DB_POOL_HOLDER sessions found"
+    fail "no SETLOG_I1_DB_POOL_HOLDER sessions found"
   fi
 
   for id in $ids; do
@@ -83,7 +83,7 @@ kill_mysql_holders() {
 }
 
 verify_baseline_restart_preserves_faults() {
-  printf 'checking baseline-traffic restart preserves app faults by default\n'
+  printf 'checking baseline-traffic restart preserves SetLog faults by default\n'
   reset_lab
   sh "$SCRIPT_DIR/fault-latency.sh" >/dev/null
   wait_fault_field dbPoolActive true
@@ -92,7 +92,7 @@ verify_baseline_restart_preserves_faults() {
   sleep 5
   assert_fault_field dbPoolActive true
 
-  printf 'checking baseline-traffic opt-in clear still clears app faults\n'
+  printf 'checking baseline-traffic opt-in clear still clears SetLog faults\n'
   BASELINE_CLEAR_FAULTS_ON_START=1 docker compose up -d --force-recreate baseline-traffic >/dev/null
   wait_fault_field dbPoolActive false
   docker compose up -d --force-recreate baseline-traffic >/dev/null
@@ -122,9 +122,9 @@ verify_incident_3() {
   printf 'checking Incident 3 debug log removal mitigation\n'
   reset_lab
   sh "$SCRIPT_DIR/incident-3-start.sh"
-  docker compose exec -T setlog sh -c 'test -e /tmp/sre301-render-debug.log'
-  docker compose exec -T setlog rm -f /tmp/sre301-render-debug.log
-  docker compose exec -T setlog sh -c 'test ! -e /tmp/sre301-render-debug.log'
+  docker compose exec -T setlog sh -c 'test -e /tmp/setlog-render-debug.log'
+  docker compose exec -T setlog rm -f /tmp/setlog-render-debug.log
+  docker compose exec -T setlog sh -c 'test ! -e /tmp/setlog-render-debug.log'
   reset_lab
 }
 
@@ -142,7 +142,7 @@ verify_incident_4() {
 
 cd "$REPO_ROOT"
 
-printf 'starting SRE301 stack for live mitigation verification\n'
+printf 'starting SetLog stack for live mitigation verification\n'
 docker compose up --build -d
 wait_stack
 

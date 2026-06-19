@@ -14,7 +14,7 @@ $skipComposeEnv = Get-LabString -Value "" -EnvName "FAULT_CLEAR_SKIP_COMPOSE" -D
 Invoke-LabRequest -Operation "clear faults" -Method "Delete" -Uri "$BaseUrl/internal/faults"
 
 if ($SkipCompose.IsPresent -or $skipComposeEnv -in @("1", "true", "TRUE", "True")) {
-    Write-Host ("cleared app faults at {0} and skipped compose service recovery because FAULT_CLEAR_SKIP_COMPOSE={1}" -f $BaseUrl, $skipComposeEnv)
+    Write-Host ("cleared SetLog faults at {0} and skipped compose service recovery because FAULT_CLEAR_SKIP_COMPOSE={1}" -f $BaseUrl, $skipComposeEnv)
     return
 }
 
@@ -30,4 +30,4 @@ if ($LASTEXITCODE -ne 0) {
     throw "failed to restart setlog-netem after setlog recovery"
 }
 
-Write-Host "cleared app faults and ensured mysql, mysqld-exporter, setlog, and setlog-netem are running"
+Write-Host "cleared SetLog faults and ensured mysql, mysqld-exporter, setlog, and setlog-netem are running"

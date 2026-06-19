@@ -68,7 +68,7 @@ if ([string]::IsNullOrWhiteSpace($roomId)) {
     if ($allowFailuresEnabled) {
         Write-Warning "failed to create or parse roomId; using synthetic room id because failures are allowed"
         $roomProbeRequired = $true
-        $roomId = "room-outage-drill"
+        $roomId = "room-outage-incident"
     } else {
         $rawResponse = $roomResponse | ConvertTo-Json -Compress
         throw "failed to parse roomId from /api/rooms response: $rawResponse"

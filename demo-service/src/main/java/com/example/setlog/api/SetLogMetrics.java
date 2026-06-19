@@ -1,4 +1,4 @@
-package com.example.sre301.setlog;
+package com.example.setlog.api;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;

@@ -82,7 +82,7 @@ function Wait-FaultField {
 }
 
 function Get-MysqlHolderIds {
-    $query = "SELECT ID FROM information_schema.PROCESSLIST WHERE ID <> CONNECTION_ID() AND INFO LIKE '%SRE301_I1_DB_POOL_HOLDER%';"
+    $query = "SELECT ID FROM information_schema.PROCESSLIST WHERE ID <> CONNECTION_ID() AND INFO LIKE '%SETLOG_I1_DB_POOL_HOLDER%';"
     $output = & docker compose exec -T mysql mysql -N -uroot -proot -e $query
     if ($LASTEXITCODE -ne 0) {
         throw "failed to read MySQL processlist"
@@ -94,7 +94,7 @@ function Kill-MysqlHolders {
     $ids = Get-MysqlHolderIds
     if ($ids.Count -eq 0) {
         & docker compose exec -T mysql mysql -uroot -proot -e "SHOW FULL PROCESSLIST;"
-        throw "no SRE301_I1_DB_POOL_HOLDER sessions found"
+        throw "no SETLOG_I1_DB_POOL_HOLDER sessions found"
     }
 
     foreach ($id in $ids) {
@@ -103,7 +103,7 @@ function Kill-MysqlHolders {
 }
 
 function Test-BaselineRestartPreservesFaults {
-    Write-Host "checking baseline-traffic restart preserves app faults by default"
+    Write-Host "checking baseline-traffic restart preserves SetLog faults by default"
     Reset-Lab
     & "$PSScriptRoot/fault-latency.ps1" | Out-Null
     Wait-FaultField -Field "dbPoolActive" -Expected $true
@@ -112,7 +112,7 @@ function Test-BaselineRestartPreservesFaults {
     Start-Sleep -Seconds 5
     Assert-FaultField -Field "dbPoolActive" -Expected $true
 
-    Write-Host "checking baseline-traffic opt-in clear still clears app faults"
+    Write-Host "checking baseline-traffic opt-in clear still clears SetLog faults"
     $oldClear = [Environment]::GetEnvironmentVariable("BASELINE_CLEAR_FAULTS_ON_START")
     try {
         $env:BASELINE_CLEAR_FAULTS_ON_START = "1"
@@ -153,9 +153,9 @@ function Test-Incident3 {
     Write-Host "checking Incident 3 debug log removal mitigation"
     Reset-Lab
     & "$PSScriptRoot/incident-3-start.ps1"
-    Invoke-CheckedCommand -File "docker" -Arguments @("compose", "exec", "-T", "setlog", "sh", "-c", "test -e /tmp/sre301-render-debug.log")
-    Invoke-CheckedCommand -File "docker" -Arguments @("compose", "exec", "-T", "setlog", "rm", "-f", "/tmp/sre301-render-debug.log")
-    Invoke-CheckedCommand -File "docker" -Arguments @("compose", "exec", "-T", "setlog", "sh", "-c", "test ! -e /tmp/sre301-render-debug.log")
+    Invoke-CheckedCommand -File "docker" -Arguments @("compose", "exec", "-T", "setlog", "sh", "-c", "test -e /tmp/setlog-render-debug.log")
+    Invoke-CheckedCommand -File "docker" -Arguments @("compose", "exec", "-T", "setlog", "rm", "-f", "/tmp/setlog-render-debug.log")
+    Invoke-CheckedCommand -File "docker" -Arguments @("compose", "exec", "-T", "setlog", "sh", "-c", "test ! -e /tmp/setlog-render-debug.log")
     Reset-Lab
 }
 
@@ -173,7 +173,7 @@ function Test-Incident4 {
 
 Push-Location $repoRoot
 try {
-    Write-Host "starting SRE301 stack for live mitigation verification"
+    Write-Host "starting SetLog stack for live mitigation verification"
     Invoke-CheckedCommand -File "docker" -Arguments @("compose", "up", "--build", "-d")
     Wait-Stack
 

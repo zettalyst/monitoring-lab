@@ -1,4 +1,4 @@
-package com.example.sre301.fault;
+package com.example.setlog.fault;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -22,7 +22,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
-import static com.example.sre301.fault.FaultDtos.FaultStatus;
+import static com.example.setlog.fault.FaultDtos.FaultStatus;
 
 @Component
 public class FaultState {
@@ -33,7 +33,7 @@ public class FaultState {
     private static final int MAX_DB_HOLDERS = 10;
     private static final long MAX_DB_HOLD_MILLIS = 600_000;
     private static final long DB_POOL_CONTENTION_MILLIS = 800;
-    private static final String DB_POOL_HOLDER_MARKER = "SRE301_I1_DB_POOL_HOLDER";
+    private static final String DB_POOL_HOLDER_MARKER = "SETLOG_I1_DB_POOL_HOLDER";
     private static final int MAX_RENDER_DELAY_MS = 30_000;
     private static final int CPU_RENDER_WORK_MILLIS = 2500;
 
@@ -59,7 +59,7 @@ public class FaultState {
     FaultState(DataSource dataSource, MeterRegistry registry) {
         this.dataSource = dataSource;
         Gauge.builder("setlog.render.debug.log.bytes", this, FaultState::diskBytes)
-            .description("Bytes retained in the SetLog render debug log during disk pressure drills.")
+            .description("Bytes retained in the SetLog render debug log during disk pressure incidents.")
             .register(registry);
     }
 
@@ -111,7 +111,7 @@ public class FaultState {
             cpuActive.set(true);
             cpuWorkers.set(workers);
             for (int index = 0; index < workers; index++) {
-                Thread thread = new Thread(this::burnCpu, "sre301-cpu-fault-" + index);
+                Thread thread = new Thread(this::burnCpu, "setlog-cpu-fault-" + index);
                 thread.setDaemon(true);
                 cpuThreads.add(thread);
                 thread.start();
@@ -127,10 +127,10 @@ public class FaultState {
 
         if (shouldEnable) {
             int size = requireRange(megabytes, "megabytes", 1, MAX_DISK_MEGABYTES);
-            Path path = Path.of(System.getProperty("java.io.tmpdir"), "sre301-render-debug.log");
+            Path path = Path.of(System.getProperty("java.io.tmpdir"), "setlog-render-debug.log");
             byte[] line = (
                 "level=debug service=setlog component=render event=frame-buffer "
-                    + "message=\"temporary render artifact retained during incident drill\"\n"
+                    + "message=\"temporary render artifact retained during incident response\"\n"
             ).getBytes(StandardCharsets.UTF_8);
             long targetBytes = (long) size * 1024 * 1024;
             long writtenBytes = 0;
@@ -160,7 +160,7 @@ public class FaultState {
             dbPoolActive.set(true);
             dbPoolHolders.set(0);
             for (int index = 0; index < holders; index++) {
-                Thread thread = new Thread(() -> holdDatabaseConnection(holdMillis), "sre301-db-pool-fault-" + index);
+                Thread thread = new Thread(() -> holdDatabaseConnection(holdMillis), "setlog-db-pool-fault-" + index);
                 thread.setDaemon(true);
                 dbThreads.add(thread);
                 thread.start();
@@ -316,7 +316,7 @@ public class FaultState {
         try {
             connection.close();
         } catch (SQLException exception) {
-            // Best-effort cleanup for a drill-only fault holder.
+            // Best-effort cleanup for a fault-injection holder.
         }
     }
 
@@ -327,7 +327,7 @@ public class FaultState {
         try {
             statement.close();
         } catch (SQLException exception) {
-            // Best-effort cleanup for a drill-only fault holder.
+            // Best-effort cleanup for a fault-injection holder.
         }
     }
 
@@ -348,7 +348,7 @@ public class FaultState {
             for (Connection connection : connections) {
                 closeQuietly(connection);
             }
-        }, "sre301-db-pool-cleanup");
+        }, "setlog-db-pool-cleanup");
         cleanupThread.setDaemon(true);
         cleanupThread.start();
     }

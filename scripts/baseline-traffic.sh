@@ -59,7 +59,7 @@ else
   if allow_failure; then
     printf 'failed to create room at %s/api/rooms; using synthetic room id because ALLOW_FAILURES=%s\n' "$BASE_URL" "$ALLOW_FAILURES" >&2
     room_probe_required=1
-    room_id="room-outage-drill"
+    room_id="room-outage-incident"
   else
     printf 'failed to create room at %s/api/rooms\n' "$BASE_URL" >&2
     exit 1
@@ -70,7 +70,7 @@ if [ -z "$room_id" ]; then
   if allow_failure; then
     printf 'failed to parse roomId; using synthetic room id because ALLOW_FAILURES=%s\n' "$ALLOW_FAILURES" >&2
     room_probe_required=1
-    room_id="room-outage-drill"
+    room_id="room-outage-incident"
   else
     printf 'failed to parse roomId from /api/rooms response:\n%s\n' "$room_json" >&2
     exit 1

@@ -88,7 +88,7 @@ reset_lab() {
 
 cd "$REPO_ROOT"
 
-printf 'starting SRE301 stack\n'
+printf 'starting SetLog stack\n'
 docker compose up --build -d
 wait_stack
 

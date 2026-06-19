@@ -1,4 +1,4 @@
-package com.example.sre301.fault;
+package com.example.setlog.fault;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -7,13 +7,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import static com.example.sre301.fault.FaultDtos.CpuFaultRequest;
-import static com.example.sre301.fault.FaultDtos.DbPoolFaultRequest;
-import static com.example.sre301.fault.FaultDtos.DiskFaultRequest;
-import static com.example.sre301.fault.FaultDtos.ErrorFaultRequest;
-import static com.example.sre301.fault.FaultDtos.FaultStatus;
-import static com.example.sre301.fault.FaultDtos.LatencyFaultRequest;
-import static com.example.sre301.fault.FaultDtos.RenderFaultRequest;
+import static com.example.setlog.fault.FaultDtos.CpuFaultRequest;
+import static com.example.setlog.fault.FaultDtos.DbPoolFaultRequest;
+import static com.example.setlog.fault.FaultDtos.DiskFaultRequest;
+import static com.example.setlog.fault.FaultDtos.ErrorFaultRequest;
+import static com.example.setlog.fault.FaultDtos.FaultStatus;
+import static com.example.setlog.fault.FaultDtos.LatencyFaultRequest;
+import static com.example.setlog.fault.FaultDtos.RenderFaultRequest;
 
 @RestController
 @RequestMapping("/internal/faults")

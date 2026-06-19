@@ -1,4 +1,4 @@
-package com.example.sre301.setlog;
+package com.example.setlog.api;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -13,7 +13,7 @@ import java.util.UUID;
 
 import javax.sql.DataSource;
 
-import com.example.sre301.fault.FaultState;
+import com.example.setlog.fault.FaultState;
 import jakarta.annotation.PostConstruct;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
@@ -21,12 +21,12 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import static com.example.sre301.setlog.SetLogDtos.ClipRequest;
-import static com.example.sre301.setlog.SetLogDtos.ClipResponse;
-import static com.example.sre301.setlog.SetLogDtos.FeedResponse;
-import static com.example.sre301.setlog.SetLogDtos.RenderJobRequest;
-import static com.example.sre301.setlog.SetLogDtos.RenderJobResponse;
-import static com.example.sre301.setlog.SetLogDtos.RoomResponse;
+import static com.example.setlog.api.SetLogDtos.ClipRequest;
+import static com.example.setlog.api.SetLogDtos.ClipResponse;
+import static com.example.setlog.api.SetLogDtos.FeedResponse;
+import static com.example.setlog.api.SetLogDtos.RenderJobRequest;
+import static com.example.setlog.api.SetLogDtos.RenderJobResponse;
+import static com.example.setlog.api.SetLogDtos.RoomResponse;
 
 @Service
 class SetLogService {

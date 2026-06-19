@@ -10,11 +10,11 @@ curl -fsS -X DELETE "$BASE_URL/internal/faults" || {
 printf '\n'
 
 if [ "$FAULT_CLEAR_SKIP_COMPOSE" = "1" ] || [ "$FAULT_CLEAR_SKIP_COMPOSE" = "true" ] || [ "$FAULT_CLEAR_SKIP_COMPOSE" = "TRUE" ]; then
-  printf 'cleared app faults at %s and skipped compose service recovery because FAULT_CLEAR_SKIP_COMPOSE=%s\n' "$BASE_URL" "$FAULT_CLEAR_SKIP_COMPOSE"
+  printf 'cleared SetLog faults at %s and skipped compose service recovery because FAULT_CLEAR_SKIP_COMPOSE=%s\n' "$BASE_URL" "$FAULT_CLEAR_SKIP_COMPOSE"
   exit 0
 fi
 
 docker compose up -d mysql mysqld-exporter setlog setlog-netem
 docker compose restart setlog-netem
 
-printf 'cleared app faults and ensured mysql, mysqld-exporter, setlog, and setlog-netem are running\n'
+printf 'cleared SetLog faults and ensured mysql, mysqld-exporter, setlog, and setlog-netem are running\n'

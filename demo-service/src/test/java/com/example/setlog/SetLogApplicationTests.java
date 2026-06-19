@@ -1,10 +1,10 @@
-package com.example.sre301;
+package com.example.setlog;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 
-import com.example.sre301.setlog.SetLogDtos.RoomResponse;
+import com.example.setlog.api.SetLogDtos.RoomResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @ActiveProfiles("test")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class Sre301DemoApplicationTests {
+class SetLogApplicationTests {
 
     @Autowired
     private TestRestTemplate restTemplate;

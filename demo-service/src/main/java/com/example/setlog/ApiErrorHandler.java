@@ -1,4 +1,4 @@
-package com.example.sre301;
+package com.example.setlog;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;

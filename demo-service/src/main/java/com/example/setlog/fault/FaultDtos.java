@@ -1,4 +1,4 @@
-package com.example.sre301.fault;
+package com.example.setlog.fault;
 
 public final class FaultDtos {
 
