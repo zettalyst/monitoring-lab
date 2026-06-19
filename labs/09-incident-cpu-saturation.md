@@ -30,12 +30,12 @@ SetLog 사용자는 하루치 clip을 daily vlog로 묶고, 결과물을 바로 
 
 바로 열기:
 
-- [I4 Page: Render p95 Latency](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=401)
-- [I4 Page: Render Queue Depth](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=402)
-- [I4 Diagnostic: SetLog CPU Pressure](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=403)
-- [I4 Guardrail: Disk Debug Log Size](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=404)
-- [Alert: sre301-i4-render-latency](http://localhost:3000/alerting/grafana/sre301-i4-render-latency/view?orgId=1)
-- [Alert: sre301-i4-render-backlog](http://localhost:3000/alerting/grafana/sre301-i4-render-backlog/view?orgId=1)
+- [I4 Page: Render p95 Latency](http://localhost:3000/d/setlog-incident-response/setlog-incident-response?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=401)
+- [I4 Page: Render Queue Depth](http://localhost:3000/d/setlog-incident-response/setlog-incident-response?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=402)
+- [I4 Diagnostic: SetLog CPU Pressure](http://localhost:3000/d/setlog-incident-response/setlog-incident-response?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=403)
+- [I4 Guardrail: Disk Debug Log Size](http://localhost:3000/d/setlog-incident-response/setlog-incident-response?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=404)
+- [Alert: setlog-i4-render-latency](http://localhost:3000/alerting/grafana/setlog-i4-render-latency/view?orgId=1)
+- [Alert: setlog-i4-render-backlog](http://localhost:3000/alerting/grafana/setlog-i4-render-backlog/view?orgId=1)
 
 | 구분 | 패널 | 질문 |
 |---|---|---|
@@ -81,7 +81,7 @@ setlog_vlog_render_queue_depth{job="setlog"}
 docker stats --no-stream
 docker compose logs setlog --tail=100
 docker compose exec setlog df -h
-docker compose exec setlog sh -c "ls -lh /tmp/sre301-render-debug.log 2>/dev/null || true"
+docker compose exec setlog sh -c "ls -lh /tmp/setlog-render-debug.log 2>/dev/null || true"
 ```
 
 확인할 것:

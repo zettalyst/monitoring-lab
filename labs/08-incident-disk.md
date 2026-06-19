@@ -32,11 +32,11 @@ SetLog의 daily vlog render는 친구들이 하루 동안 시간대별로 채운
 
 바로 열기:
 
-- [I3 Page: Render Failure Ratio](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=301)
-- [I3 Impact: Render Job HTTP Status](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=302)
-- [I3 Diagnostic: Render Debug Log Size](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=303)
-- [I3 Diagnostic: SetLog Disk I/O](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=304)
-- [Alert: sre301-i3-render-failures](http://localhost:3000/alerting/grafana/sre301-i3-render-failures/view?orgId=1)
+- [I3 Page: Render Failure Ratio](http://localhost:3000/d/setlog-incident-response/setlog-incident-response?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=301)
+- [I3 Impact: Render Job HTTP Status](http://localhost:3000/d/setlog-incident-response/setlog-incident-response?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=302)
+- [I3 Diagnostic: Render Debug Log Size](http://localhost:3000/d/setlog-incident-response/setlog-incident-response?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=303)
+- [I3 Diagnostic: SetLog Disk I/O](http://localhost:3000/d/setlog-incident-response/setlog-incident-response?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=304)
+- [Alert: setlog-i3-render-failures](http://localhost:3000/alerting/grafana/setlog-i3-render-failures/view?orgId=1)
 
 | 구분 | 패널 | 질문 |
 |---|---|---|
@@ -69,7 +69,7 @@ sum(rate(http_server_requests_seconds_count{job="setlog", uri="/api/render-jobs"
 ```sh
 docker compose exec setlog df -h
 docker compose exec setlog du -sh /tmp
-docker compose exec setlog sh -c "ls -lh /tmp/sre301-render-debug.log 2>/dev/null || true"
+docker compose exec setlog sh -c "ls -lh /tmp/setlog-render-debug.log 2>/dev/null || true"
 docker stats --no-stream
 docker compose logs setlog --tail=100
 ```
@@ -77,7 +77,7 @@ docker compose logs setlog --tail=100
 확인할 것:
 
 - `/tmp` 사용량이 증가했는가?
-- `/tmp/sre301-render-debug.log` 파일이 실제로 보이는가?
+- `/tmp/setlog-render-debug.log` 파일이 실제로 보이는가?
 - render 실패 로그가 disk 관련 증거와 같은 시점인가?
 - CPU가 render 실패를 설명할 만큼 높지 않은가?
 

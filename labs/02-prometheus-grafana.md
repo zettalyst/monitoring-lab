@@ -54,5 +54,5 @@ sum(rate(setlog_clip_uploads_total{job="setlog"}[1m])) by (result, reason, netwo
 ## 완료 기준
 
 - `setlog`의 scrape endpoint가 `/actuator/prometheus`임을 확인했다.
-- Grafana에서 `SRE301 Golden Signals Lab` 대시보드를 열었다.
+- Grafana에서 `SetLog Incident Response` 대시보드를 열었다.
 - `rate`와 `histogram_quantile`이 왜 counter와 histogram에 쓰이는지 설명할 수 있다.

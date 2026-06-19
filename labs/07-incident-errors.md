@@ -28,15 +28,15 @@ SetLog의 핵심 여정은 친구 방을 만들거나 초대 코드로 합류하
 
 ## Grafana / PromQL 관찰
 
-Grafana에서 먼저 `I2 Page: API 5xx Ratio`와 `I2 Impact: 5xx by API`를 본다. 실패가 늘었는지, traffic이 끊긴 것인지 구분한다.
+Grafana에서 먼저 `I2 Page: API 5xx Ratio`와 `I2 Impact: Traffic and Status by API`를 본다. 실패가 늘었는지, traffic이 끊긴 것인지 구분한다.
 
 바로 열기:
 
-- [I2 Page: API 5xx Ratio](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=201)
-- [I2 Impact: 5xx by API](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=202)
-- [I2 Domain: Clip Upload Success vs Failure](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=203)
-- [I2 Diagnostic: MySQL Dependency](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=204)
-- [Alert: sre301-i2-too-many-5xx](http://localhost:3000/alerting/grafana/sre301-i2-too-many-5xx/view?orgId=1)
+- [I2 Page: API 5xx Ratio](http://localhost:3000/d/setlog-incident-response/setlog-incident-response?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=201)
+- [I2 Impact: Traffic and Status by API](http://localhost:3000/d/setlog-incident-response/setlog-incident-response?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=202)
+- [I2 Domain: Clip Upload Success vs Failure](http://localhost:3000/d/setlog-incident-response/setlog-incident-response?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=203)
+- [I2 Diagnostic: MySQL Dependency](http://localhost:3000/d/setlog-incident-response/setlog-incident-response?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=204)
+- [Alert: setlog-i2-too-many-5xx](http://localhost:3000/alerting/grafana/setlog-i2-too-many-5xx/view?orgId=1)
 
 | 구분 | 볼 것 | 질문 |
 |---|---|---|

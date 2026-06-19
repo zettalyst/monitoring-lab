@@ -27,7 +27,7 @@ docker stats --no-stream
 docker compose exec setlog df -h
 docker compose exec setlog du -sh /tmp
 docker compose exec mysql mysql -uroot -proot -e "SHOW FULL PROCESSLIST"
-docker compose exec mysql mysql -N -uroot -proot -e "SELECT ID, INFO FROM information_schema.PROCESSLIST WHERE INFO LIKE '%SRE301_I1_DB_POOL_HOLDER%'"
+docker compose exec mysql mysql -N -uroot -proot -e "SELECT ID, INFO FROM information_schema.PROCESSLIST WHERE INFO LIKE '%SETLOG_I1_DB_POOL_HOLDER%'"
 docker compose logs mysql --tail=100
 docker compose logs mysqld-exporter --tail=100
 ```

@@ -44,4 +44,4 @@ DB pending connection은 정상 상황에서 __개다.
 ## 완료 기준
 
 - 본인 환경의 baseline 값을 표에 기록했다.
-- 이후 incident drill에서 baseline 대비 차이를 근거로 설명할 수 있다.
+- 이후 incident response에서 baseline 대비 차이를 근거로 설명할 수 있다.

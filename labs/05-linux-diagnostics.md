@@ -42,7 +42,7 @@ docker compose ps
 docker stats --no-stream
 ```
 
-Grafana의 Incident 실습용 saturation 패널은 cAdvisor의 `container_*` 지표를 사용합니다. `node-exporter`와 `node_*` 지표는 host/machine context 확인용으로 유지하지만, setlog 컨테이너의 CPU, memory, filesystem I/O, network 판단은 `container_label_com_docker_compose_service="setlog"`가 붙은 cAdvisor 지표를 우선 봅니다.
+Grafana의 SetLog incident saturation 패널은 cAdvisor의 `container_*` 지표를 사용합니다. `node-exporter`와 `node_*` 지표는 host/machine context 확인용으로 유지하지만, setlog 컨테이너의 CPU, memory, filesystem I/O, network 판단은 `container_label_com_docker_compose_service="setlog"`가 붙은 cAdvisor 지표를 우선 봅니다.
 
 ## 완료 기준
 

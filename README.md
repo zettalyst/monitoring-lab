@@ -1,6 +1,6 @@
-# SRE301: Grafana, Prometheus 장애 모니터링 실습
+# SetLog Incident Response: Grafana, Prometheus 장애 모니터링 실습
 
-이 저장소는 SRE301 강의 내용을 교안형 로컬 워크숍으로 옮긴 실습 프로젝트입니다. 흐름은 `Baseline 관찰 -> Golden Signals 대시보드 -> 도메인 지표 설계 -> Incident Drill -> Runbook/Postmortem`으로 이어집니다.
+이 저장소는 SetLog 운영 장애 대응 워크숍을 위한 로컬 실습 프로젝트입니다. 흐름은 `Baseline 관찰 -> Golden Signals 대시보드 -> 도메인 지표 설계 -> Incident Response -> Runbook/Postmortem`으로 이어집니다.
 
 강의 정본은 Bear note입니다. main에는 Bear에서 생성한 `LECTURE.md`만 배포용 mirror로 둡니다. `slides/`와 `answers/`는 main에서 제외하며, 답안은 추후 answer 브랜치에서 관리합니다. 정본 ID와 sync 절차는 [Bear Source of Truth](docs/bear-source-of-truth.md)를 따릅니다.
 
@@ -37,14 +37,13 @@ Compose가 `setlog` health를 확인한 뒤 `baseline-traffic` 서비스를 시�
 - Node Exporter: http://localhost:9100/metrics
 - cAdvisor: http://localhost:8081/metrics
 - mysqld_exporter: http://localhost:9104/metrics
-- Availability sample app: http://localhost:8082
 
 Grafana 기본 로그인:
 
 - User: `admin`
 - Password: `admin`
 
-Grafana에서는 `SRE301 Golden Signals Lab` 대시보드를 열어 둡니다.
+Grafana에서는 `SetLog` 폴더의 `SetLog Incident Response` 대시보드를 주 실습 화면으로 열어 둡니다. Prometheus, cAdvisor, Node Exporter, MySQL 상세 대시보드는 `SetLog Support` 폴더에서 보조 증거 확인용으로 사용합니다.
 
 ## 실습 순서
 
@@ -53,10 +52,10 @@ Grafana에서는 `SRE301 Golden Signals Lab` 대시보드를 열어 둡니다.
 3. [정상 상태 Baseline 관찰](labs/03-baseline.md)
 4. [SetLog 도메인 지표 설계](labs/04-domain-metrics.md)
 5. [Linux 진단 도구 실습](labs/05-linux-diagnostics.md)
-6. [Incident 1: 서비스 지연 모의 대응](labs/06-incident-latency.md)
-7. [Incident 2: 에러 증가 모의 대응](labs/07-incident-errors.md)
-8. [Incident 3: 디스크 초과 모의 대응](labs/08-incident-disk.md)
-9. [Incident 4: CPU Pressure 모의 대응](labs/09-incident-cpu-saturation.md)
+6. [Incident 1: SetLog 서비스 지연 대응](labs/06-incident-latency.md)
+7. [Incident 2: SetLog 에러 증가 대응](labs/07-incident-errors.md)
+8. [Incident 3: SetLog 디스크 압박 대응](labs/08-incident-disk.md)
+9. [Incident 4: SetLog CPU Pressure 대응](labs/09-incident-cpu-saturation.md)
 10. [Runbook과 Mini Postmortem](labs/10-runbook-postmortem.md)
 
 ## SetLog API
@@ -126,7 +125,7 @@ Incident 시작:
 - MySQL dependency 지표: `up{job="mysqld-exporter"}`, `mysql_up`, `mysql_global_status_threads_*`
 - `node-exporter`와 `node_*` 지표는 host/machine context 확인용으로 유지합니다. Incident 실습의 CPU, memory, filesystem I/O, network 판단은 cAdvisor의 Docker container 지표를 우선 사용합니다.
 - SetLog 도메인 지표: `setlog_clip_uploads_total`, `setlog_clip_upload_duration_seconds`, `setlog_room_sync_duration_seconds`, `setlog_vlog_render_jobs_total`, `setlog_vlog_render_queue_depth`, `setlog_render_debug_log_bytes`
-- 증상 기반 page 알림과 원인 후보 diagnostic 신호 예시: [prometheus/rules/sre301-alerts.yml](prometheus/rules/sre301-alerts.yml)
+- 증상 기반 page 알림과 원인 후보 diagnostic 신호 예시: [prometheus/rules/setlog-alerts.yml](prometheus/rules/setlog-alerts.yml)
   - Page: p95 latency, 5xx ratio, traffic drop, render failure, render latency/backlog처럼 사용자 영향에 가까운 신호
   - Diagnostic: DB pool pending, mysqld-exporter down, setlog container CPU pressure, render debug log bytes처럼 원인 후보를 좁히는 보조 신호
 
@@ -160,10 +159,10 @@ docker run --rm -v "$PWD/demo-service:/workspace" -w /workspace gradle:8.14.3-jd
 docker compose config
 python3 scripts/sync-bear-sources.py --check
 python3 scripts/sync-bear-sources.py --check --include-answers
-python3 scripts/verify-sre301-assets.py --dashboard-rules-out /tmp/sre301-dashboard-rules.yml
-python3 -m json.tool grafana/dashboards/sre301/golden-signals.json >/tmp/sre301-dashboard.json
+python3 scripts/verify-setlog-assets.py --dashboard-rules-out /tmp/setlog-dashboard-rules.yml
+python3 -m json.tool grafana/dashboards/setlog/golden-signals.json >/tmp/setlog-dashboard.json
 docker run --rm -v "$PWD/prometheus:/etc/prometheus:ro" --entrypoint promtool prom/prometheus check config /etc/prometheus/prometheus.yml
-docker run --rm -v /tmp/sre301-dashboard-rules.yml:/tmp/sre301-dashboard-rules.yml:ro --entrypoint promtool prom/prometheus check rules /tmp/sre301-dashboard-rules.yml
+docker run --rm -v /tmp/setlog-dashboard-rules.yml:/tmp/setlog-dashboard-rules.yml:ro --entrypoint promtool prom/prometheus check rules /tmp/setlog-dashboard-rules.yml
 docker compose up --build -d
 ```
 
@@ -180,7 +179,7 @@ PowerShell:
 ```powershell
 docker run --rm -v "${PWD}\demo-service:/workspace" -w /workspace gradle:8.14.3-jdk21 gradle --no-daemon test
 docker compose config
-Get-Content -Raw .\grafana\dashboards\sre301\golden-signals.json | ConvertFrom-Json | Out-Null
+Get-Content -Raw .\grafana\dashboards\setlog\golden-signals.json | ConvertFrom-Json | Out-Null
 docker compose up --build -d
 ```
 
@@ -189,7 +188,7 @@ cmd:
 ```bat
 docker run --rm -v "%cd%\demo-service:/workspace" -w /workspace gradle:8.14.3-jdk21 gradle --no-daemon test
 docker compose config
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Content -Raw .\grafana\dashboards\sre301\golden-signals.json | ConvertFrom-Json | Out-Null"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Content -Raw .\grafana\dashboards\setlog\golden-signals.json | ConvertFrom-Json | Out-Null"
 docker compose up --build -d
 ```
 
@@ -224,30 +223,4 @@ curl.exe -sS "http://localhost:9090/api/v1/query?query=up"
 ```text
 docker compose down
 docker compose down -v
-```
-
-## Availability Multiple Practice
-
-기존 main의 availability multiple 예제도 함께 유지합니다. Compose의 `app` 서비스는 컨테이너 내부 `8080`을 사용하고, SetLog와 host port가 겹치지 않도록 `http://localhost:8082`로 노출합니다. Prometheus는 `app:8080` target을 scrape합니다.
-
-```promql
-# 최대가용배수 = 한계 사용량 / 현재 사용량
-max(lab_capacity_limit_rps{job="app"}) / clamp_min(sum(rate(http_requests_total{job="app"}[5m])), 0.001)
-
-# 부하증가배수 = n / (n - 1)
-max(lab_node_count{job="app"}) / (max(lab_node_count{job="app"}) - 1)
-
-# 임계상황 = 부하증가배수 > 최대가용배수
-(max(lab_node_count{job="app"}) / (max(lab_node_count{job="app"}) - 1)) > bool (max(lab_capacity_limit_rps{job="app"}) / clamp_min(sum(rate(http_requests_total{job="app"}[5m])), 0.001))
-```
-
-Generate enough traffic to trigger the critical-situation alert:
-
-```sh
-for i in $(seq 1 120); do
-  curl -s "http://localhost:8082/work?delayMs=50" >/dev/null &
-  curl -s "http://localhost:8082/work?delayMs=50" >/dev/null &
-  sleep 0.2
-done
-wait
 ```

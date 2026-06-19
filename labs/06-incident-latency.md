@@ -28,14 +28,14 @@ SetLog 사용자는 친구들과 같은 방에 들어가 매 시간 짧은 clip�
 
 ## Grafana / PromQL 관찰
 
-Grafana의 `SRE301 Golden Signals Lab` 대시보드에서 시간 범위를 최근 15분으로 맞춘다.
+Grafana의 `SetLog Incident Response` 대시보드에서 시간 범위를 최근 15분으로 맞춘다.
 
 바로 열기:
 
-- [I1 Page: API p95 by Journey](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=101)
-- [I1 Impact: Traffic and Status by API](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=102)
-- [I1 Diagnostic: DB Pool Saturation](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=103)
-- [Alert: sre301-i1-high-latency](http://localhost:3000/alerting/grafana/sre301-i1-high-latency/view?orgId=1)
+- [I1 Page: API p95 by Journey](http://localhost:3000/d/setlog-incident-response/setlog-incident-response?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=101)
+- [I1 Impact: Traffic and Status by API](http://localhost:3000/d/setlog-incident-response/setlog-incident-response?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=102)
+- [I1 Diagnostic: DB Pool Saturation](http://localhost:3000/d/setlog-incident-response/setlog-incident-response?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=103)
+- [Alert: setlog-i1-high-latency](http://localhost:3000/alerting/grafana/setlog-i1-high-latency/view?orgId=1)
 
 | 구분 | 볼 것 | 질문 |
 |---|---|---|
@@ -67,13 +67,13 @@ docker compose ps
 docker compose logs setlog --tail=100
 docker stats --no-stream
 docker compose exec mysql mysql -uroot -proot -e "SHOW FULL PROCESSLIST"
-docker compose exec mysql mysql -N -uroot -proot -e "SELECT ID, INFO FROM information_schema.PROCESSLIST WHERE INFO LIKE '%SRE301_I1_DB_POOL_HOLDER%'"
+docker compose exec mysql mysql -N -uroot -proot -e "SELECT ID, INFO FROM information_schema.PROCESSLIST WHERE INFO LIKE '%SETLOG_I1_DB_POOL_HOLDER%'"
 ```
 
 확인할 것:
 
 - setlog와 mysql 컨테이너는 살아 있는가?
-- MySQL 자체 장애라기보다 `SRE301_I1_DB_POOL_HOLDER` 세션이 connection을 점유하는 모양인가?
+- MySQL 자체 장애라기보다 `SETLOG_I1_DB_POOL_HOLDER` 세션이 connection을 점유하는 모양인가?
 - CPU가 높지 않은데도 latency가 높은가?
 - service log에 connection timeout, pending, slow request 흔적이 있는가?
 
