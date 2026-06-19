@@ -13,10 +13,10 @@
       "keepTime": true,
       "tags": [],
       "targetBlank": false,
-      "title": "Open Golden Signals Dashboard",
+      "title": "Open SetLog Incident Response",
       "tooltip": "Back to the incident practice dashboard",
       "type": "link",
-      "url": "/d/sre301-golden-signals/sre301-golden-signals-lab"
+      "url": "/d/setlog-incident-response/setlog-incident-response"
     }
   ],
   "liveNow": false,
@@ -1560,10 +1560,10 @@
   "refresh": "5s",
   "schemaVersion": 39,
   "tags": [
-    "sre301",
+    "setlog",
     "mysql",
     "dependency",
-    "training"
+    "support"
   ],
   "templating": {
     "list": []
@@ -1574,8 +1574,8 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "SRE301 MySQL Dependency Lab",
-  "uid": "sre301-mysql-dependency",
+  "title": "SetLog MySQL Dependency",
+  "uid": "setlog-mysql-dependency",
   "version": 1,
   "weekStart": ""
 }

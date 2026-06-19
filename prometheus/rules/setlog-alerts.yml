@@ -1,5 +1,5 @@
 groups:
-  - name: sre301-symptom-alerts
+  - name: setlog-symptom-alerts
     interval: 10s
     rules:
       - alert: HighLatency
@@ -10,6 +10,7 @@ groups:
           )) > 0.8
         for: 1m
         labels:
+          service: setlog
           severity: page
           signal: latency
         annotations:
@@ -25,6 +26,7 @@ groups:
           ) > 0.05
         for: 1m
         labels:
+          service: setlog
           severity: page
           signal: errors
         annotations:
@@ -36,10 +38,11 @@ groups:
           sum(rate(http_server_requests_seconds_count{job="setlog", uri=~"/api/.*"}[5m])) < 0.05
         for: 3m
         labels:
+          service: setlog
           severity: ticket
           signal: traffic
         annotations:
-          summary: "API traffic is lower than the training baseline"
+          summary: "SetLog API traffic is lower than the expected baseline"
           description: "Symptom alert: no user-visible traffic is reaching the service. This may be expected outside the baseline traffic exercise."
 
       - alert: RenderLatencyHigh
@@ -50,6 +53,7 @@ groups:
           ) > 2
         for: 30s
         labels:
+          service: setlog
           severity: page
           signal: latency
           journey: render
@@ -66,6 +70,7 @@ groups:
           ) > 0.2
         for: 30s
         labels:
+          service: setlog
           severity: page
           signal: errors
           journey: render
@@ -78,6 +83,7 @@ groups:
           setlog_vlog_render_queue_depth{job="setlog"} > 0
         for: 30s
         labels:
+          service: setlog
           severity: page
           signal: saturation
           journey: render
@@ -85,7 +91,7 @@ groups:
           summary: "Daily vlog render queue has backlog"
           description: "Symptom alert: render work is waiting in queue, so users may receive daily vlog results late. Use CPU and disk panels as supporting evidence."
 
-  - name: sre301-diagnostic-signals
+  - name: setlog-diagnostic-signals
     interval: 10s
     rules:
       - alert: DbPoolPendingDiagnostic
@@ -93,6 +99,7 @@ groups:
           hikaricp_connections_pending{job="setlog"} > 0
         for: 30s
         labels:
+          service: setlog
           severity: info
           signal: diagnostic
         annotations:
@@ -104,17 +111,19 @@ groups:
           up{job="mysqld-exporter"} == 0
         for: 30s
         labels:
+          service: setlog
           severity: info
           signal: diagnostic
         annotations:
           summary: "Diagnostic: mysqld-exporter target is down"
-          description: "Supporting signal only. Page on 5xx ratio or availability symptoms, then use this to evaluate a dependency outage hypothesis."
+          description: "Supporting signal only. Page on 5xx ratio or user-visible dependency symptoms, then use this to evaluate a database outage hypothesis."
 
       - alert: DiskPressureDiagnostic
         expr: |
           setlog_render_debug_log_bytes{job="setlog"} > 0
         for: 30s
         labels:
+          service: setlog
           severity: info
           signal: diagnostic
         annotations:
@@ -137,8 +146,9 @@ groups:
           ) > 0.6
         for: 2m
         labels:
+          service: setlog
           severity: info
           signal: diagnostic
         annotations:
           summary: "Diagnostic: setlog container CPU pressure is elevated"
-          description: "Supporting signal only. Docker Desktop cAdvisor reports the saturated drill around 60-80% of quota, so use this with render latency and queue depth."
+          description: "Supporting signal only. Docker Desktop cAdvisor reports the CPU pressure incident around 60-80% of quota, so use this with render latency and queue depth."

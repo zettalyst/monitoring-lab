@@ -36,7 +36,7 @@ fetch_alerts() {
 }
 
 assert_provisioned_alerts() {
-  alerts_json="$(mktemp /tmp/sre301-grafana-alerts.XXXXXX.json)"
+  alerts_json="$(mktemp /tmp/setlog-grafana-alerts.XXXXXX.json)"
   fetch_alerts >"$alerts_json"
   if python3 - "$alerts_json" "$@" <<'PY'
 import json
@@ -64,7 +64,7 @@ PY
 alert_state_matches() {
   alert_name="$1"
   expected="$2"
-  alerts_json="$(mktemp /tmp/sre301-grafana-alerts.XXXXXX.json)"
+  alerts_json="$(mktemp /tmp/setlog-grafana-alerts.XXXXXX.json)"
   fetch_alerts >"$alerts_json"
   if python3 - "$alerts_json" "$alert_name" "$expected" <<'PY'
 import json
@@ -95,7 +95,7 @@ PY
 }
 
 print_alert_states() {
-  alerts_json="$(mktemp /tmp/sre301-grafana-alerts.XXXXXX.json)"
+  alerts_json="$(mktemp /tmp/setlog-grafana-alerts.XXXXXX.json)"
   fetch_alerts >"$alerts_json"
   if python3 - "$alerts_json" "$@" <<'PY'
 import json
@@ -170,14 +170,14 @@ wait_for_post_mitigation_scrape() {
 
 mysql_holder_ids() {
   docker compose exec -T mysql mysql -N -uroot -proot -e \
-    "SELECT ID FROM information_schema.PROCESSLIST WHERE ID <> CONNECTION_ID() AND INFO LIKE '%SRE301_I1_DB_POOL_HOLDER%';"
+    "SELECT ID FROM information_schema.PROCESSLIST WHERE ID <> CONNECTION_ID() AND INFO LIKE '%SETLOG_I1_DB_POOL_HOLDER%';"
 }
 
 kill_mysql_holders() {
   ids="$(mysql_holder_ids)"
   if [ -z "$ids" ]; then
     docker compose exec -T mysql mysql -uroot -proot -e "SHOW FULL PROCESSLIST;" >&2 || true
-    printf 'no SRE301_I1_DB_POOL_HOLDER sessions found\n' >&2
+    printf 'no SETLOG_I1_DB_POOL_HOLDER sessions found\n' >&2
     return 1
   fi
 
@@ -198,7 +198,7 @@ mitigate_incident_2() {
 }
 
 mitigate_incident_3() {
-  docker compose exec -T setlog rm -f /tmp/sre301-render-debug.log
+  docker compose exec -T setlog rm -f /tmp/setlog-render-debug.log
   wait_for_post_mitigation_scrape
 }
 
@@ -213,38 +213,38 @@ cd "$REPO_ROOT"
 
 wait_http grafana "$GRAFANA_URL/api/health"
 reload_grafana_alerting
-assert_provisioned_alerts I1\ HighLatency I2\ TooMany5xx I3\ RenderFailuresHigh I4\ RenderLatencyHigh I4\ RenderBacklog
+assert_provisioned_alerts SetLog\ I1\ HighLatency SetLog\ I2\ TooMany5xx SetLog\ I3\ RenderFailuresHigh SetLog\ I4\ RenderLatencyHigh SetLog\ I4\ RenderBacklog
 reset_facilitator_state
 wait_for_post_mitigation_scrape
-wait_all_normal I1\ HighLatency I2\ TooMany5xx I3\ RenderFailuresHigh I4\ RenderLatencyHigh I4\ RenderBacklog
+wait_all_normal SetLog\ I1\ HighLatency SetLog\ I2\ TooMany5xx SetLog\ I3\ RenderFailuresHigh SetLog\ I4\ RenderLatencyHigh SetLog\ I4\ RenderBacklog
 
 printf 'checking Incident 1 Grafana alert firing and recovery\n'
 reset_facilitator_state
 sh "$SCRIPT_DIR/incident-1-start.sh"
-wait_all_alerting I1\ HighLatency
+wait_all_alerting SetLog\ I1\ HighLatency
 mitigate_incident_1
-wait_all_normal I1\ HighLatency
+wait_all_normal SetLog\ I1\ HighLatency
 
 printf 'checking Incident 2 Grafana alert firing and recovery\n'
 reset_facilitator_state
 sh "$SCRIPT_DIR/incident-2-start.sh"
-wait_all_alerting I2\ TooMany5xx
+wait_all_alerting SetLog\ I2\ TooMany5xx
 mitigate_incident_2
-wait_all_normal I2\ TooMany5xx
+wait_all_normal SetLog\ I2\ TooMany5xx
 
 printf 'checking Incident 3 Grafana alert firing and recovery\n'
 reset_facilitator_state
 sh "$SCRIPT_DIR/incident-3-start.sh"
-wait_all_alerting I3\ RenderFailuresHigh
+wait_all_alerting SetLog\ I3\ RenderFailuresHigh
 mitigate_incident_3
-wait_all_normal I3\ RenderFailuresHigh
+wait_all_normal SetLog\ I3\ RenderFailuresHigh
 
 printf 'checking Incident 4 Grafana alert firing and recovery\n'
 reset_facilitator_state
 sh "$SCRIPT_DIR/incident-4-start.sh"
-wait_all_alerting I4\ RenderLatencyHigh I4\ RenderBacklog
+wait_all_alerting SetLog\ I4\ RenderLatencyHigh SetLog\ I4\ RenderBacklog
 mitigate_incident_4
-wait_all_normal I4\ RenderLatencyHigh I4\ RenderBacklog
+wait_all_normal SetLog\ I4\ RenderLatencyHigh SetLog\ I4\ RenderBacklog
 
 reset_facilitator_state
 printf 'Grafana alert smoke verification complete\n'

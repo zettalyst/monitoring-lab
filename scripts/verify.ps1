@@ -7,8 +7,8 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$dashboardPath = Join-Path $repoRoot "grafana/dashboards/sre301/golden-signals.json"
-$dashboardRulesPath = Join-Path $repoRoot (".sre301-dashboard-rules.{0}.yml" -f ([System.Guid]::NewGuid().ToString("N")))
+$dashboardPath = Join-Path $repoRoot "grafana/dashboards/setlog/golden-signals.json"
+$dashboardRulesPath = Join-Path $repoRoot (".setlog-dashboard-rules.{0}.yml" -f ([System.Guid]::NewGuid().ToString("N")))
 $demoServicePath = Join-Path $repoRoot "demo-service"
 
 Write-Output "checking docker compose config"
@@ -29,9 +29,9 @@ try {
     }
 
     Write-Output "checking Grafana dashboards, panels, and query extraction"
-    & python3 scripts/verify-sre301-assets.py --dashboard-rules-out $dashboardRulesPath
+    & python3 scripts/verify-setlog-assets.py --dashboard-rules-out $dashboardRulesPath
     if ($LASTEXITCODE -ne 0) {
-        throw "SRE301 asset verification failed with exit code $LASTEXITCODE"
+        throw "SetLog asset verification failed with exit code $LASTEXITCODE"
     }
 
     Write-Output "checking Prometheus config and alert rules"

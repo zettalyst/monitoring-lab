@@ -13,10 +13,10 @@
       "keepTime": true,
       "tags": [],
       "targetBlank": false,
-      "title": "Open MySQL Dependency Dashboard",
-      "tooltip": "Incident 2 database dependency drill details",
+      "title": "Open SetLog MySQL Dependency",
+      "tooltip": "Incident 2 database dependency incident details",
       "type": "link",
-      "url": "/d/sre301-mysql-dependency/sre301-mysql-dependency-lab"
+      "url": "/d/setlog-mysql-dependency/setlog-mysql-dependency"
     }
   ],
   "liveNow": false,
@@ -315,7 +315,7 @@
       },
       "id": 100,
       "panels": [],
-      "title": "Incident 1 - Service Latency Drill",
+      "title": "Incident 1 - SetLog API Latency",
       "type": "row"
     },
     {
@@ -659,7 +659,7 @@
       },
       "id": 200,
       "panels": [],
-      "title": "Incident 2 - 5xx Error Drill",
+      "title": "Incident 2 - SetLog API Errors",
       "type": "row"
     },
     {
@@ -769,7 +769,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "",
+      "description": "Shows all SetLog API traffic by method, route, and status so the panel stays useful before and during Incident 2.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -851,14 +851,14 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum by (method, uri, status) (rate(http_server_requests_seconds_count{job=\"setlog\", uri=~\"/api/.*\", status=~\"5..\"}[1m]))",
+          "expr": "sum by (method, uri, status) (rate(http_server_requests_seconds_count{job=\"setlog\", uri=~\"/api/.*\"}[1m]))",
           "instant": false,
           "legendFormat": "{{method}} {{uri}} {{status}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "I2 Impact: 5xx by API",
+      "title": "I2 Impact: Traffic and Status by API",
       "type": "timeseries"
     },
     {
@@ -1074,7 +1074,7 @@
       },
       "id": 300,
       "panels": [],
-      "title": "Incident 3 - Render Failure and Disk Drill",
+      "title": "Incident 3 - SetLog Render Failures",
       "type": "row"
     },
     {
@@ -1082,7 +1082,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "",
+      "description": "Incident 3 page signal. This should remain near 0 until the disk fault is active.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1184,7 +1184,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "",
+      "description": "Render job HTTP status by response code. 5xx series should only appear during render failure incidents.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1500,7 +1500,7 @@
       },
       "id": 400,
       "panels": [],
-      "title": "Incident 4 - Render Latency and CPU Drill",
+      "title": "Incident 4 - SetLog Render Latency",
       "type": "row"
     },
     {
@@ -1797,7 +1797,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"setlog\", cpu=\"total\"}[1m])) / clamp_min(sum((container_spec_cpu_quota{container_label_com_docker_compose_service=\"setlog\"} / container_spec_cpu_period{container_label_com_docker_compose_service=\"setlog\"})), 0.001)",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\", container_label_com_docker_compose_service=\"setlog\"}[2m])) / clamp_min(sum(container_spec_cpu_quota{job=\"cadvisor\", container_label_com_docker_compose_service=\"setlog\"} / container_spec_cpu_period{job=\"cadvisor\", container_label_com_docker_compose_service=\"setlog\"}), 0.001)",
           "instant": false,
           "legendFormat": "setlog cpu/quota",
           "range": true,
@@ -1809,7 +1809,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service=\"setlog\", cpu=\"total\"}[1m]))",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\", container_label_com_docker_compose_service=\"setlog\"}[2m]))",
           "instant": false,
           "legendFormat": "setlog cpu cores",
           "range": true,
@@ -2511,9 +2511,9 @@
   "refresh": "5s",
   "schemaVersion": 39,
   "tags": [
-    "sre301",
-    "golden-signals",
-    "training"
+    "setlog",
+    "incident-response",
+    "golden-signals"
   ],
   "templating": {
     "list": []
@@ -2524,8 +2524,8 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "SRE301 Golden Signals Lab",
-  "uid": "sre301-golden-signals",
+  "title": "SetLog Incident Response",
+  "uid": "setlog-incident-response",
   "version": 9,
   "weekStart": ""
 }

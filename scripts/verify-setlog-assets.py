@@ -11,11 +11,12 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-GOLDEN_DASHBOARD = REPO_ROOT / "grafana/dashboards/sre301/golden-signals.json"
-MYSQL_DASHBOARD = REPO_ROOT / "grafana/dashboards/sre301/mysql-dependency.json"
-PROMETHEUS_DASHBOARD = REPO_ROOT / "grafana/dashboards/prometheus-overview.json"
-CADVISOR_DASHBOARD = REPO_ROOT / "grafana/dashboards/cadvisor-containers.json"
-NODE_EXPORTER_DASHBOARD = REPO_ROOT / "grafana/dashboards/node-exporter-overview.json"
+GOLDEN_DASHBOARD = REPO_ROOT / "grafana/dashboards/setlog/golden-signals.json"
+SUPPORT_DASHBOARD_DIR = REPO_ROOT / "grafana/dashboards/setlog-support"
+MYSQL_DASHBOARD = SUPPORT_DASHBOARD_DIR / "mysql-dependency.json"
+PROMETHEUS_DASHBOARD = SUPPORT_DASHBOARD_DIR / "prometheus-overview.json"
+CADVISOR_DASHBOARD = SUPPORT_DASHBOARD_DIR / "container-runtime.json"
+NODE_EXPORTER_DASHBOARD = SUPPORT_DASHBOARD_DIR / "host-overview.json"
 ALERTING_FILE = REPO_ROOT / "grafana/provisioning/alerting/alerting.yml"
 DASHBOARD_PROVISIONING_FILE = REPO_ROOT / "grafana/provisioning/dashboards/dashboards.yml"
 
@@ -41,7 +42,7 @@ EXPECTED_GOLDEN_PANELS = {
     "I1 Impact: Traffic and Status by API",
     "I1 Diagnostic: DB Pool Saturation",
     "I2 Page: API 5xx Ratio",
-    "I2 Impact: 5xx by API",
+    "I2 Impact: Traffic and Status by API",
     "I2 Domain: Clip Upload Success vs Failure",
     "I2 Diagnostic: MySQL Dependency Up",
     "I3 Page: Render Failure Ratio",
@@ -61,11 +62,11 @@ EXPECTED_GOLDEN_PANELS = {
 }
 
 EXPECTED_GRAFANA_ALERTS = {
-    "sre301-i1-high-latency": 101,
-    "sre301-i2-too-many-5xx": 201,
-    "sre301-i3-render-failures": 301,
-    "sre301-i4-render-latency": 401,
-    "sre301-i4-render-backlog": 402,
+    "setlog-i1-high-latency": 101,
+    "setlog-i2-too-many-5xx": 201,
+    "setlog-i3-render-failures": 301,
+    "setlog-i4-render-latency": 401,
+    "setlog-i4-render-backlog": 402,
 }
 
 EXPECTED_SUPPORT_DASHBOARD_PANELS = {
@@ -114,7 +115,7 @@ BACKTICK_PATTERN = re.compile(r"`([^`\n]+)`")
 
 
 def fail(message: str) -> None:
-    print(f"verify-sre301-assets: {message}", file=sys.stderr)
+    print(f"verify-setlog-assets: {message}", file=sys.stderr)
     raise SystemExit(1)
 
 
@@ -190,12 +191,19 @@ def validate_dashboard_provisioning() -> None:
     except FileNotFoundError:
         fail(f"missing Grafana dashboard provisioning file {DASHBOARD_PROVISIONING_FILE}")
 
-    if "path: /var/lib/grafana/dashboards/sre301" in text:
-        fail("Grafana dashboard provisioning only scans the sre301 subdirectory")
-    if "path: /var/lib/grafana/dashboards" not in text:
-        fail("Grafana dashboard provisioning must scan /var/lib/grafana/dashboards")
-    if "foldersFromFilesStructure: true" not in text:
-        fail("Grafana dashboard provisioning must preserve dashboard subfolders")
+    required = {
+        "name: SetLog": "SetLog dashboard provider",
+        "path: /var/lib/grafana/dashboards/setlog": "SetLog dashboard path",
+        "folder: SetLog": "SetLog dashboard folder",
+        "name: SetLog Support": "SetLog Support dashboard provider",
+        "path: /var/lib/grafana/dashboards/setlog-support": "SetLog Support dashboard path",
+        "folder: SetLog Support": "SetLog Support dashboard folder",
+    }
+    missing = [description for token, description in required.items() if token not in text]
+    if missing:
+        fail("Grafana dashboard provisioning is missing " + ", ".join(missing))
+    if "foldersFromFilesStructure: true" in text:
+        fail("Grafana dashboard provisioning must use explicit SetLog and SetLog Support providers")
 
 
 def validate_doc_panel_references() -> None:
@@ -303,27 +311,27 @@ def validate_alerting_file() -> list[tuple[str, str, str]]:
             fail(f"{uid} must link to panelId {expected_panel_id}, got {panel_id}")
         if annotation_panel_id != str(expected_panel_id):
             fail(f"{uid} must annotate __panelId__ {expected_panel_id}, got {annotation_panel_id}")
-        if dashboard_uid != "sre301-golden-signals":
-            fail(f"{uid} must annotate dashboard sre301-golden-signals, got {dashboard_uid}")
+        if dashboard_uid != "setlog-incident-response":
+            fail(f"{uid} must annotate dashboard setlog-incident-response, got {dashboard_uid}")
 
     if len(expressions) < len(EXPECTED_GRAFANA_ALERTS):
         fail(f"expected at least {len(EXPECTED_GRAFANA_ALERTS)} Grafana alert PromQL expressions, found {len(expressions)}")
 
-    i3_expressions = expressions_by_uid.get("sre301-i3-render-failures", [])
+    i3_expressions = expressions_by_uid.get("setlog-i3-render-failures", [])
     if not i3_expressions or not any('reason="disk"' in expr for expr in i3_expressions):
-        fail("sre301-i3-render-failures must isolate disk-related render failures with reason=\"disk\"")
+        fail("setlog-i3-render-failures must isolate disk-related render failures with reason=\"disk\"")
 
-    i1_expressions = expressions_by_uid.get("sre301-i1-high-latency", [])
+    i1_expressions = expressions_by_uid.get("setlog-i1-high-latency", [])
     if not i1_expressions or not any('status!~"5.."' in expr for expr in i1_expressions):
-        fail("sre301-i1-high-latency must exclude 5xx responses with status!~\"5..\"")
+        fail("setlog-i1-high-latency must exclude 5xx responses with status!~\"5..\"")
 
     return expressions
 
 
 def write_dashboard_rule_file(path: Path, expressions: list[tuple[str, str, str]]) -> None:
-    lines = ["groups:", "  - name: sre301-dashboard-query-parse", "    rules:"]
+    lines = ["groups:", "  - name: setlog-dashboard-query-parse", "    rules:"]
     for index, (_, label, expr) in enumerate(expressions, start=1):
-        record_name = f"sre301_dashboard_query_{index:03d}"
+        record_name = f"setlog_dashboard_query_{index:03d}"
         lines.append(f"      - record: {record_name}")
         lines.append("        labels:")
         lines.append(f"          panel: {json.dumps(label, ensure_ascii=True)}")
@@ -334,7 +342,7 @@ def write_dashboard_rule_file(path: Path, expressions: list[tuple[str, str, str]
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Validate SRE301 dashboard, panel, and query assets.")
+    parser = argparse.ArgumentParser(description="Validate SetLog dashboard, panel, and query assets.")
     parser.add_argument("--dashboard-rules-out", type=Path)
     args = parser.parse_args()
 

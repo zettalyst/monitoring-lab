@@ -18,24 +18,24 @@ docker compose config --quiet
 printf 'checking Bear generated sources\n'
 python3 scripts/sync-bear-sources.py --check
 
-dashboard_rules="$(mktemp "$PWD/.sre301-dashboard-rules.XXXXXX.yml")"
+dashboard_rules="$(mktemp "$PWD/.setlog-dashboard-rules.XXXXXX.yml")"
 trap 'rm -f "$dashboard_rules"' EXIT
 
 printf 'checking Grafana dashboards, panels, and query extraction\n'
-python3 scripts/verify-sre301-assets.py --dashboard-rules-out "$dashboard_rules"
+python3 scripts/verify-setlog-assets.py --dashboard-rules-out "$dashboard_rules"
 
 printf 'checking Grafana dashboard JSON\n'
 if command -v python3 >/dev/null 2>&1; then
-  for dashboard in grafana/dashboards/*.json grafana/dashboards/sre301/*.json; do
-    python3 -m json.tool "$dashboard" >/tmp/sre301-dashboard.json
+  find grafana/dashboards -maxdepth 2 -type f -name '*.json' | while IFS= read -r dashboard; do
+    python3 -m json.tool "$dashboard" >/tmp/setlog-dashboard.json
   done
 elif command -v python >/dev/null 2>&1; then
-  for dashboard in grafana/dashboards/*.json grafana/dashboards/sre301/*.json; do
-    python -m json.tool "$dashboard" >/tmp/sre301-dashboard.json
+  find grafana/dashboards -maxdepth 2 -type f -name '*.json' | while IFS= read -r dashboard; do
+    python -m json.tool "$dashboard" >/tmp/setlog-dashboard.json
   done
 else
   docker run --rm -v "$PWD:/workspace" -w /workspace python:3.12-alpine \
-    sh -c 'for dashboard in grafana/dashboards/*.json grafana/dashboards/sre301/*.json; do python -m json.tool "$dashboard" >/tmp/sre301-dashboard.json; done'
+    sh -c 'find grafana/dashboards -maxdepth 2 -type f -name "*.json" | while IFS= read -r dashboard; do python -m json.tool "$dashboard" >/tmp/setlog-dashboard.json; done'
 fi
 
 printf 'checking Prometheus config and alert rules\n'
