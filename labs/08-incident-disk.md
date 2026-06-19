@@ -18,7 +18,7 @@ SetLog의 daily vlog render는 친구들이 하루 동안 시간대별로 채운
 
 ## Incident 시작
 
-진행자가 공용 실습 환경에서 Incident를 시작했다면 아래 명령은 실행하지 않는다. 로컬에서 혼자 실습할 때만 한 줄로 시작한다. 이 스크립트는 실습 준비 traffic과 장애 상태에서의 관측 traffic을 함께 만든다.
+진행자가 공용 실습 환경에서 Incident를 시작했다면 아래 명령은 실행하지 않는다. 로컬에서 혼자 실습할 때만 한 줄로 시작한다. 이 스크립트는 disk fault를 한 번 주입한 뒤 종료한다. 관측 traffic은 Compose의 `baseline-traffic` 서비스가 계속 만든다.
 
 | 환경 | 명령 |
 |---|---|
@@ -26,9 +26,17 @@ SetLog의 daily vlog render는 친구들이 하루 동안 시간대별로 채운
 | PowerShell | `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\incident-3-start.ps1` |
 | cmd | `scripts\incident-3-start.cmd` |
 
-실행이 끝나면 "Incident 3 is active" 메시지를 확인하고 Grafana에서 표를 작성한다.
+`Incident 3 is active` 메시지가 출력되면 Grafana에서 표를 작성한다.
 
 ## Grafana / PromQL 관찰
+
+바로 열기:
+
+- [I3 Page: Render Failure Ratio](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=301)
+- [I3 Impact: Render Job HTTP Status](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=302)
+- [I3 Diagnostic: Render Debug Log Size](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=303)
+- [I3 Diagnostic: SetLog Disk I/O](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=304)
+- [Alert: sre301-i3-render-failures](http://localhost:3000/alerting/grafana/sre301-i3-render-failures/view?orgId=1)
 
 | 구분 | 패널 | 질문 |
 |---|---|---|
@@ -80,7 +88,7 @@ docker compose logs setlog --tail=100
 제약:
 
 - 진행자용 reset은 사용하지 않는다.
-- 새 traffic 생성을 멈춘 뒤 조치한다.
+- baseline traffic은 계속 흐르는 상태에서 조치한다.
 - 디스크 정리와 앱 재시작을 한 번에 섞지 않는다.
 - 조치 하나마다 어떤 지표가 회복됐는지 기록한다.
 
@@ -95,7 +103,7 @@ docker compose logs setlog --tail=100
 2차 완화 명령:
 2차 검증 지표:
 
-회복 검증 traffic 명령:
+회복 검증 지표:
 ```
 
 정답 명령은 별도 진행자 문서에만 둔다. 이 실습에서는 멘티가 직접 선택하고 실행한 완화 조치로 회복을 만들어야 한다.

@@ -1,8 +1,6 @@
 set -eu
 
 PROMETHEUS_URL="${PROMETHEUS_URL:-http://localhost:9090}"
-INCIDENT_VALIDATE="${INCIDENT_VALIDATE:-1}"
-INCIDENT_AUTO_TUNE="${INCIDENT_AUTO_TUNE:-1}"
 INCIDENT_VALIDATION_WINDOW="${INCIDENT_VALIDATION_WINDOW:-2m}"
 INCIDENT_VALIDATION_ATTEMPTS="${INCIDENT_VALIDATION_ATTEMPTS:-12}"
 INCIDENT_VALIDATION_SLEEP_SECONDS="${INCIDENT_VALIDATION_SLEEP_SECONDS:-5}"
@@ -13,14 +11,6 @@ is_true() {
     1|true|TRUE|yes|YES|on|ON) return 0 ;;
     *) return 1 ;;
   esac
-}
-
-incident_validation_enabled() {
-  is_true "$INCIDENT_VALIDATE"
-}
-
-incident_auto_tune_enabled() {
-  is_true "$INCIDENT_AUTO_TUNE"
 }
 
 incident_query_value() {
@@ -43,8 +33,9 @@ incident_query_value() {
   esac
 
   printf '%s\n' "$response" |
-    sed -n 's/.*"value":\[[^][]*,"\([^"]*\)".*/\1/p' |
-    head -n 1
+    grep -o '"value":\[[^]]*\]' |
+    head -n 1 |
+    sed -n 's/.*,"\([^"]*\)"\].*/\1/p'
 }
 
 incident_query_number() {
@@ -153,9 +144,4 @@ incident_assert_eq() {
 
 incident_wait_for_scrape() {
   sleep "$INCIDENT_SCRAPE_WAIT_SECONDS"
-}
-
-incident_print_validation_disabled_summary() {
-  incident="$1"
-  printf '{"incident":%s,"passed":true,"validationSkipped":true}\n' "$incident"
 }

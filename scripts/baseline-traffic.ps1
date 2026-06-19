@@ -77,10 +77,27 @@ if ([string]::IsNullOrWhiteSpace($roomId)) {
 
 for ($i = 1; $i -le $Count; $i++) {
     if ($roomProbeRequired) {
-        Invoke-TrafficRequest `
+        $probeResponse = Invoke-TrafficRequest `
             -Operation "create room probe during iteration $i" `
             -Method "Post" `
-            -Uri "$BaseUrl/api/rooms" | Out-Null
+            -Uri "$BaseUrl/api/rooms"
+
+        $probeRoomId = $null
+        try {
+            if ($null -ne $probeResponse) {
+                $probeRoomId = [string] $probeResponse.roomId
+            }
+        } catch {
+            $probeRoomId = $null
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($probeRoomId)) {
+            $roomId = $probeRoomId
+            $roomProbeRequired = $false
+            Write-Warning "adopted recovered roomId $roomId during create room probe iteration $i"
+        } else {
+            Write-Warning "create room probe during iteration $i did not return a roomId; keeping synthetic room id"
+        }
     }
 
     Invoke-TrafficRequest `

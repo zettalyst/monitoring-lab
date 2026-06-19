@@ -16,7 +16,7 @@ SetLog의 핵심 여정은 친구 방을 만들거나 초대 코드로 합류하
 
 ## Incident 시작
 
-진행자가 공용 실습 환경에서 Incident를 시작했다면 아래 명령은 실행하지 않는다. 로컬에서 혼자 실습할 때만 한 줄로 시작한다. 이 스크립트는 실습 준비 traffic과 장애 상태에서의 관측 traffic을 함께 만든다.
+진행자가 공용 실습 환경에서 Incident를 시작했다면 아래 명령은 실행하지 않는다. 로컬에서 혼자 실습할 때만 한 줄로 시작한다. 이 스크립트는 dependency fault를 한 번 주입한 뒤 종료한다. 관측 traffic은 Compose의 `baseline-traffic` 서비스가 계속 만든다.
 
 | 환경 | 명령 |
 |---|---|
@@ -24,11 +24,19 @@ SetLog의 핵심 여정은 친구 방을 만들거나 초대 코드로 합류하
 | PowerShell | `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\incident-2-start.ps1` |
 | cmd | `scripts\incident-2-start.cmd` |
 
-실행이 끝나면 "Incident 2 is active" 메시지를 확인하고 Grafana에서 표를 작성한다.
+`Incident 2 is active` 메시지가 출력되면 Grafana에서 표를 작성한다.
 
 ## Grafana / PromQL 관찰
 
 Grafana에서 먼저 `I2 Page: API 5xx Ratio`와 `I2 Impact: 5xx by API`를 본다. 실패가 늘었는지, traffic이 끊긴 것인지 구분한다.
+
+바로 열기:
+
+- [I2 Page: API 5xx Ratio](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=201)
+- [I2 Impact: 5xx by API](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=202)
+- [I2 Domain: Clip Upload Success vs Failure](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=203)
+- [I2 Diagnostic: MySQL Dependency](http://localhost:3000/d/sre301-golden-signals/sre301-golden-signals-lab?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=204)
+- [Alert: sre301-i2-too-many-5xx](http://localhost:3000/alerting/grafana/sre301-i2-too-many-5xx/view?orgId=1)
 
 | 구분 | 볼 것 | 질문 |
 |---|---|---|
@@ -87,6 +95,7 @@ docker compose logs mysqld-exporter --tail=100
 제약:
 
 - 진행자용 reset은 사용하지 않는다.
+- baseline traffic은 계속 흐르는 상태에서 조치한다.
 - 앱을 먼저 재시작하기 전에 dependency 상태를 확인한다.
 - 내려간 component만 복구하고, 앱 조치는 5xx가 계속될 때만 추가한다.
 - 조치 전후를 같은 증상 지표로 비교한다.
@@ -97,7 +106,7 @@ docker compose logs mysqld-exporter --tail=100
 dependency 복구 명령:
 dependency 상태 확인 명령:
 조건부 앱 조치 명령:
-회복 검증 traffic 명령:
+회복 검증 지표:
 ```
 
 정답 명령은 별도 진행자 문서에만 둔다. 이 실습에서는 멘티가 직접 선택하고 실행한 완화 조치로 회복을 만들어야 한다.

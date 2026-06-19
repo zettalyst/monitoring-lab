@@ -12,7 +12,7 @@ $ErrorActionPreference = "Stop"
 
 $BaseUrl = Get-LabString -Value $BaseUrl -EnvName "BASE_URL" -Default "http://localhost:8080"
 $LatencyMs = Get-LabInt -Value $LatencyMs -EnvName "LATENCY_MS" -Default 0
-$DbPoolHolders = Get-LabInt -Value $DbPoolHolders -EnvName "DB_POOL_HOLDERS" -Default 2
+$DbPoolHolders = Get-LabInt -Value $DbPoolHolders -EnvName "DB_POOL_HOLDERS" -Default 4
 $DbPoolHoldMillis = Get-LabInt -Value $DbPoolHoldMillis -EnvName "DB_POOL_HOLD_MILLIS" -Default 300000
 
 if ($LatencyMs -lt 0) {

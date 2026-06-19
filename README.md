@@ -27,7 +27,7 @@ cmd용 스크립트는 기본 Windows PowerShell을 호출하므로 별도 `pwsh
 docker compose up --build -d
 ```
 
-Compose가 `setlog` health를 확인한 뒤 `baseline-traffic` 서비스를 시작합니다. 이 서비스는 먼저 app fault 상태를 reset하고, 약 30 QPS 수준의 SetLog 정상 트래픽을 계속 보내서 Grafana와 Prometheus에 baseline을 자동으로 쌓습니다.
+Compose가 `setlog` health를 확인한 뒤 `baseline-traffic` 서비스를 시작합니다. 이 서비스는 여러 worker로 SetLog 정상 트래픽을 계속 보내서 Grafana와 Prometheus에 baseline을 자동으로 쌓습니다. 실습 전 깨끗한 상태가 필요하면 명시적으로 `sh scripts/fault-clear.sh`를 실행합니다. `baseline-traffic` 시작 시 fault를 자동으로 지우려면 `BASELINE_CLEAR_FAULTS_ON_START=1 docker compose up -d --force-recreate baseline-traffic`처럼 opt-in으로 실행합니다.
 
 접속 주소:
 
@@ -97,13 +97,7 @@ curl.exe -sS http://localhost:8080/actuator/prometheus
 
 ## 트래픽과 Incident 시작
 
-`docker compose up --build -d` 이후에는 baseline 트래픽이 자동으로 생성됩니다. 기본값은 `COUNT=480`, `SLEEP_SECONDS=0.03`, `RENDER_EVERY=4`이며, `baseline-loop`는 3초 pause 후 반복해 평균 약 30 QPS를 유지합니다. 패널을 빠르게 채우거나 Compose 밖에서 SetLog 앱만 띄운 경우에는 아래 명령으로 추가 baseline 샘플을 보낼 수 있습니다.
-
-| 환경 | 명령 |
-|---|---|
-| macOS, Linux, WSL, Git Bash | `sh scripts/baseline-traffic.sh` |
-| PowerShell | `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\baseline-traffic.ps1` |
-| cmd | `scripts\baseline-traffic.cmd` |
+`docker compose up --build -d` 이후에는 baseline 트래픽이 자동으로 생성됩니다. 기본값은 `BASELINE_LOOP_WORKERS=3`, worker당 `COUNT=160`, `SLEEP_SECONDS=0.03`, `RENDER_EVERY=4`이며, `baseline-loop`는 3초 pause 후 반복합니다. Incident 실습과 회복 검증은 이 상시 baseline 트래픽을 전제로 합니다.
 
 자동 baseline loop 상태는 아래처럼 확인합니다.
 
@@ -111,7 +105,7 @@ curl.exe -sS http://localhost:8080/actuator/prometheus
 docker compose logs baseline-traffic --tail=50
 ```
 
-Incident 실습은 준비 traffic, fault setup, 장애 상태에서의 관측 traffic을 start 스크립트 한 번으로 만든다. 멘티는 여러 준비 명령을 조합하지 않고 Grafana와 진단 도구로 Incident 표를 작성한다.
+Incident start 스크립트는 fault를 한 번 주입한 뒤 종료합니다. 멘티는 이미 흐르고 있는 baseline traffic을 보면서 Grafana, Prometheus, Docker/MySQL 명령으로 판단하고 완화 조치를 실행합니다. reset이 필요하면 진행자용 `sh scripts/fault-clear.sh`를 명시적으로 실행합니다.
 
 Incident 시작:
 
@@ -165,6 +159,7 @@ macOS, Linux, WSL, Git Bash:
 docker run --rm -v "$PWD/demo-service:/workspace" -w /workspace gradle:8.14.3-jdk21 gradle --no-daemon test
 docker compose config
 python3 scripts/sync-bear-sources.py --check
+python3 scripts/sync-bear-sources.py --check --include-answers
 python3 scripts/verify-sre301-assets.py --dashboard-rules-out /tmp/sre301-dashboard-rules.yml
 python3 -m json.tool grafana/dashboards/sre301/golden-signals.json >/tmp/sre301-dashboard.json
 docker run --rm -v "$PWD/prometheus:/etc/prometheus:ro" --entrypoint promtool prom/prometheus check config /etc/prometheus/prometheus.yml
@@ -176,6 +171,8 @@ Incident 1~4가 실제 Grafana/Prometheus 신호와 맞게 주입되는지 확�
 
 ```sh
 sh scripts/verify-incidents.sh
+sh scripts/verify-grafana-alerts.sh
+sh scripts/verify-live-mitigation.sh
 ```
 
 PowerShell:

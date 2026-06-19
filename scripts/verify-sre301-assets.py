@@ -14,7 +14,23 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 GOLDEN_DASHBOARD = REPO_ROOT / "grafana/dashboards/sre301/golden-signals.json"
 MYSQL_DASHBOARD = REPO_ROOT / "grafana/dashboards/sre301/mysql-dependency.json"
 PROMETHEUS_DASHBOARD = REPO_ROOT / "grafana/dashboards/prometheus-overview.json"
+CADVISOR_DASHBOARD = REPO_ROOT / "grafana/dashboards/cadvisor-containers.json"
+NODE_EXPORTER_DASHBOARD = REPO_ROOT / "grafana/dashboards/node-exporter-overview.json"
 ALERTING_FILE = REPO_ROOT / "grafana/provisioning/alerting/alerting.yml"
+DASHBOARD_PROVISIONING_FILE = REPO_ROOT / "grafana/provisioning/dashboards/dashboards.yml"
+
+QUERY_DASHBOARDS = (
+    GOLDEN_DASHBOARD,
+    MYSQL_DASHBOARD,
+    PROMETHEUS_DASHBOARD,
+    CADVISOR_DASHBOARD,
+    NODE_EXPORTER_DASHBOARD,
+)
+
+NODE_CPU_ALLOWED_DASHBOARDS = {
+    PROMETHEUS_DASHBOARD.as_posix(),
+    NODE_EXPORTER_DASHBOARD.as_posix(),
+}
 
 EXPECTED_GOLDEN_PANELS = {
     "Service Up",
@@ -50,6 +66,27 @@ EXPECTED_GRAFANA_ALERTS = {
     "sre301-i3-render-failures": 301,
     "sre301-i4-render-latency": 401,
     "sre301-i4-render-backlog": 402,
+}
+
+EXPECTED_SUPPORT_DASHBOARD_PANELS = {
+    CADVISOR_DASHBOARD: {
+        "cAdvisor Up",
+        "Compose Containers",
+        "Container Memory Total",
+        "Container CPU by Service",
+        "Container Memory by Service",
+        "Container Network by Service",
+        "Container Filesystem I/O by Service",
+    },
+    NODE_EXPORTER_DASHBOARD: {
+        "Node Exporter Up",
+        "CPU Busy",
+        "Memory Used",
+        "CPU Busy Trend",
+        "Load Average",
+        "Filesystem Used",
+        "Network I/O",
+    },
 }
 
 DOCS_WITH_PANEL_REFERENCES = [
@@ -138,10 +175,35 @@ def validate_golden_dashboard() -> None:
         fail(f"golden dashboard still exposes stale panel titles: {', '.join(forbidden)}")
 
 
+def validate_support_dashboards() -> None:
+    for path, expected_panels in EXPECTED_SUPPORT_DASHBOARD_PANELS.items():
+        dashboard = load_dashboard(path)
+        titles = dashboard_titles(dashboard)
+        missing = sorted(expected_panels - titles)
+        if missing:
+            fail(f"{path.relative_to(REPO_ROOT)} is missing expected panels: {', '.join(missing)}")
+
+
+def validate_dashboard_provisioning() -> None:
+    try:
+        text = DASHBOARD_PROVISIONING_FILE.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        fail(f"missing Grafana dashboard provisioning file {DASHBOARD_PROVISIONING_FILE}")
+
+    if "path: /var/lib/grafana/dashboards/sre301" in text:
+        fail("Grafana dashboard provisioning only scans the sre301 subdirectory")
+    if "path: /var/lib/grafana/dashboards" not in text:
+        fail("Grafana dashboard provisioning must scan /var/lib/grafana/dashboards")
+    if "foldersFromFilesStructure: true" not in text:
+        fail("Grafana dashboard provisioning must preserve dashboard subfolders")
+
+
 def validate_doc_panel_references() -> None:
     allowed_titles = dashboard_titles(load_dashboard(GOLDEN_DASHBOARD))
     allowed_titles |= dashboard_titles(load_dashboard(MYSQL_DASHBOARD))
     allowed_titles |= dashboard_titles(load_dashboard(PROMETHEUS_DASHBOARD))
+    allowed_titles |= dashboard_titles(load_dashboard(CADVISOR_DASHBOARD))
+    allowed_titles |= dashboard_titles(load_dashboard(NODE_EXPORTER_DASHBOARD))
 
     failures: list[str] = []
     for path in DOCS_WITH_PANEL_REFERENCES:
@@ -160,7 +222,7 @@ def validate_doc_panel_references() -> None:
 
 def validate_dashboard_queries() -> list[tuple[str, str, str]]:
     expressions: list[tuple[str, str, str]] = []
-    for path in (GOLDEN_DASHBOARD, MYSQL_DASHBOARD, PROMETHEUS_DASHBOARD):
+    for path in QUERY_DASHBOARDS:
         dashboard = load_dashboard(path)
         expressions.extend(dashboard_expressions(path, dashboard))
 
@@ -170,7 +232,7 @@ def validate_dashboard_queries() -> list[tuple[str, str, str]]:
     invalid_cpu = [
         f"{source} {label}"
         for source, label, expr in expressions
-        if "node_cpu_seconds_total" in expr and "prometheus-overview" not in source
+        if "node_cpu_seconds_total" in expr and source not in NODE_CPU_ALLOWED_DASHBOARDS
     ]
     if invalid_cpu:
         fail("lab dashboard queries must use cAdvisor container CPU metrics, found node CPU in " + ", ".join(invalid_cpu))
@@ -277,6 +339,8 @@ def main() -> int:
     args = parser.parse_args()
 
     validate_golden_dashboard()
+    validate_support_dashboards()
+    validate_dashboard_provisioning()
     validate_doc_panel_references()
     expressions = validate_dashboard_queries()
     expressions.extend(validate_alerting_file())

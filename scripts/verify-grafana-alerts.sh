@@ -168,30 +168,44 @@ wait_for_post_mitigation_scrape() {
   sleep "$POST_MITIGATION_SCRAPE_SLEEP_SECONDS"
 }
 
+mysql_holder_ids() {
+  docker compose exec -T mysql mysql -N -uroot -proot -e \
+    "SELECT ID FROM information_schema.PROCESSLIST WHERE ID <> CONNECTION_ID() AND INFO LIKE '%SRE301_I1_DB_POOL_HOLDER%';"
+}
+
+kill_mysql_holders() {
+  ids="$(mysql_holder_ids)"
+  if [ -z "$ids" ]; then
+    docker compose exec -T mysql mysql -uroot -proot -e "SHOW FULL PROCESSLIST;" >&2 || true
+    printf 'no SRE301_I1_DB_POOL_HOLDER sessions found\n' >&2
+    return 1
+  fi
+
+  for id in $ids; do
+    docker compose exec -T mysql mysql -uroot -proot -e "KILL $id;"
+  done
+}
+
 mitigate_incident_1() {
-  docker compose restart setlog
-  wait_http setlog "$BASE_URL/actuator/health"
-  COUNT=30 SLEEP_SECONDS=0.05 sh "$SCRIPT_DIR/baseline-traffic.sh"
+  kill_mysql_holders
   wait_for_post_mitigation_scrape
 }
 
 mitigate_incident_2() {
   docker compose up -d mysql mysqld-exporter
   wait_http setlog "$BASE_URL/actuator/health"
-  COUNT=80 SLEEP_SECONDS=0.03 sh "$SCRIPT_DIR/baseline-traffic.sh"
   wait_for_post_mitigation_scrape
 }
 
 mitigate_incident_3() {
   docker compose exec -T setlog rm -f /tmp/sre301-render-debug.log
-  COUNT=30 SLEEP_SECONDS=0.05 RENDER_EVERY=1 sh "$SCRIPT_DIR/baseline-traffic.sh"
   wait_for_post_mitigation_scrape
 }
 
 mitigate_incident_4() {
   docker compose restart setlog
+  docker compose restart setlog-netem
   wait_http setlog "$BASE_URL/actuator/health"
-  COUNT=30 SLEEP_SECONDS=0.05 RENDER_EVERY=1 sh "$SCRIPT_DIR/baseline-traffic.sh"
   wait_for_post_mitigation_scrape
 }
 
@@ -206,38 +220,28 @@ wait_all_normal I1\ HighLatency I2\ TooMany5xx I3\ RenderFailuresHigh I4\ Render
 
 printf 'checking Incident 1 Grafana alert firing and recovery\n'
 reset_facilitator_state
-BASELINE_COUNT=5 \
-INCIDENT_COUNT=8 \
-INCIDENT_SLEEP_SECONDS=0.02 \
-INCIDENT_CONCURRENCY=2 \
-DB_POOL_PROBE_CONCURRENCY=2 \
-INCIDENT_MAX_CONCURRENCY=6 \
-DB_POOL_PROBE_WAVES=5 \
-DB_POOL_PROBE_SLEEP_SECONDS=0.1 \
-INCIDENT_SCRAPE_WAIT_SECONDS=15 \
-INCIDENT_VALIDATE=1 \
-  sh "$SCRIPT_DIR/incident-1-start.sh"
+sh "$SCRIPT_DIR/incident-1-start.sh"
 wait_all_alerting I1\ HighLatency
 mitigate_incident_1
 wait_all_normal I1\ HighLatency
 
 printf 'checking Incident 2 Grafana alert firing and recovery\n'
 reset_facilitator_state
-INCIDENT_VALIDATE=1 sh "$SCRIPT_DIR/incident-2-start.sh"
+sh "$SCRIPT_DIR/incident-2-start.sh"
 wait_all_alerting I2\ TooMany5xx
 mitigate_incident_2
 wait_all_normal I2\ TooMany5xx
 
 printf 'checking Incident 3 Grafana alert firing and recovery\n'
 reset_facilitator_state
-INCIDENT_VALIDATE=1 sh "$SCRIPT_DIR/incident-3-start.sh"
+sh "$SCRIPT_DIR/incident-3-start.sh"
 wait_all_alerting I3\ RenderFailuresHigh
 mitigate_incident_3
 wait_all_normal I3\ RenderFailuresHigh
 
 printf 'checking Incident 4 Grafana alert firing and recovery\n'
 reset_facilitator_state
-INCIDENT_VALIDATE=1 sh "$SCRIPT_DIR/incident-4-start.sh"
+sh "$SCRIPT_DIR/incident-4-start.sh"
 wait_all_alerting I4\ RenderLatencyHigh I4\ RenderBacklog
 mitigate_incident_4
 wait_all_normal I4\ RenderLatencyHigh I4\ RenderBacklog

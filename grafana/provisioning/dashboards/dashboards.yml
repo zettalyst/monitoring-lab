@@ -5,4 +5,5 @@ providers:
     type: file
     allowUiUpdates: true
     options:
-      path: /var/lib/grafana/dashboards/sre301
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: true

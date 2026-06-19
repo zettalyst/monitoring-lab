@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -32,6 +33,7 @@ public class FaultState {
     private static final int MAX_DB_HOLDERS = 10;
     private static final long MAX_DB_HOLD_MILLIS = 600_000;
     private static final long DB_POOL_CONTENTION_MILLIS = 800;
+    private static final String DB_POOL_HOLDER_MARKER = "SRE301_I1_DB_POOL_HOLDER";
     private static final int MAX_RENDER_DELAY_MS = 30_000;
     private static final int CPU_RENDER_WORK_MILLIS = 2500;
 
@@ -48,6 +50,8 @@ public class FaultState {
     private final AtomicInteger renderDelayMs = new AtomicInteger();
     private final List<Thread> cpuThreads = new ArrayList<>();
     private final List<Thread> dbThreads = new ArrayList<>();
+    private final List<Connection> dbConnections = new ArrayList<>();
+    private final List<Statement> dbStatements = new ArrayList<>();
 
     private Path diskPressureFile;
     private volatile long diskBytes;
@@ -154,7 +158,7 @@ public class FaultState {
             int holders = requireRange(requestedHolders, "holders", 1, MAX_DB_HOLDERS);
             long holdMillis = requireRange(requestedHoldMillis, "holdMillis", 1000L, MAX_DB_HOLD_MILLIS);
             dbPoolActive.set(true);
-            dbPoolHolders.set(holders);
+            dbPoolHolders.set(0);
             for (int index = 0; index < holders; index++) {
                 Thread thread = new Thread(() -> holdDatabaseConnection(holdMillis), "sre301-db-pool-fault-" + index);
                 thread.setDaemon(true);
@@ -243,15 +247,48 @@ public class FaultState {
     }
 
     private void holdDatabaseConnection(long holdMillis) {
-        while (dbPoolActive.get()) {
-            try (Connection connection = dataSource.getConnection()) {
-                long deadline = System.currentTimeMillis() + holdMillis;
-                while (dbPoolActive.get() && System.currentTimeMillis() < deadline) {
-                    sleep(200, "db pool fault interrupted");
+        Connection connection = null;
+        try {
+            connection = dataSource.getConnection();
+            synchronized (this) {
+                if (!dbPoolActive.get()) {
+                    return;
                 }
-            } catch (SQLException exception) {
-                sleep(250, "db pool retry interrupted");
+                dbConnections.add(connection);
+                dbPoolHolders.incrementAndGet();
             }
+            long sleepSeconds = Math.max(1L, (holdMillis + 999L) / 1000L);
+            Statement statement = connection.createStatement();
+            synchronized (this) {
+                if (!dbPoolActive.get()) {
+                    closeQuietly(statement);
+                    return;
+                }
+                dbStatements.add(statement);
+            }
+            try {
+                statement.execute("SELECT /* " + DB_POOL_HOLDER_MARKER + " */ SLEEP(" + sleepSeconds + ")");
+            } finally {
+                synchronized (this) {
+                    dbStatements.remove(statement);
+                }
+                closeQuietly(statement);
+            }
+        } catch (SQLException exception) {
+            if (dbPoolActive.get()) {
+                // KILLing the MySQL session is the intended mitigation. The thread exits after that.
+            }
+        } finally {
+            synchronized (this) {
+                if (connection != null) {
+                    dbConnections.remove(connection);
+                }
+                int remaining = dbPoolHolders.updateAndGet(value -> Math.max(0, value - 1));
+                if (remaining == 0) {
+                    dbPoolActive.set(false);
+                }
+            }
+            closeQuietly(connection);
         }
     }
 
@@ -264,7 +301,56 @@ public class FaultState {
     private void stopDbPool() {
         dbPoolActive.set(false);
         dbPoolHolders.set(0);
+        List<Statement> statements = new ArrayList<>(dbStatements);
+        List<Connection> connections = new ArrayList<>(dbConnections);
+        dbStatements.clear();
+        dbConnections.clear();
         interruptAndClear(dbThreads);
+        closeDatabaseHoldersAsync(statements, connections);
+    }
+
+    private void closeQuietly(Connection connection) {
+        if (connection == null) {
+            return;
+        }
+        try {
+            connection.close();
+        } catch (SQLException exception) {
+            // Best-effort cleanup for a drill-only fault holder.
+        }
+    }
+
+    private void closeQuietly(Statement statement) {
+        if (statement == null) {
+            return;
+        }
+        try {
+            statement.close();
+        } catch (SQLException exception) {
+            // Best-effort cleanup for a drill-only fault holder.
+        }
+    }
+
+    private void closeDatabaseHoldersAsync(List<Statement> statements, List<Connection> connections) {
+        if (statements.isEmpty() && connections.isEmpty()) {
+            return;
+        }
+
+        Thread cleanupThread = new Thread(() -> {
+            for (Statement statement : statements) {
+                try {
+                    statement.cancel();
+                } catch (SQLException exception) {
+                    // The intended live mitigation is SQL KILL; reset cleanup is best effort.
+                }
+                closeQuietly(statement);
+            }
+            for (Connection connection : connections) {
+                closeQuietly(connection);
+            }
+        }, "sre301-db-pool-cleanup");
+        cleanupThread.setDaemon(true);
+        cleanupThread.start();
     }
 
     private void interruptAndClear(List<Thread> threads) {

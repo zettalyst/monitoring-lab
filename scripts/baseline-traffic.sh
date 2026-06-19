@@ -46,14 +46,15 @@ run_request() {
   exit 1
 }
 
+parse_room_id() {
+  sed -n 's/.*"roomId"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' |
+    head -n 1
+}
+
 room_probe_required=0
 
 if room_json="$(curl -fsS -X POST "$BASE_URL/api/rooms")"; then
-  room_id="$(
-    printf '%s\n' "$room_json" |
-      sed -n 's/.*"roomId"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' |
-      head -n 1
-  )"
+  room_id="$(printf '%s\n' "$room_json" | parse_room_id)"
 else
   if allow_failure; then
     printf 'failed to create room at %s/api/rooms; using synthetic room id because ALLOW_FAILURES=%s\n' "$BASE_URL" "$ALLOW_FAILURES" >&2
@@ -79,7 +80,21 @@ fi
 i=1
 while [ "$i" -le "$COUNT" ]; do
   if [ "$room_probe_required" -eq 1 ]; then
-    run_request "create room probe iteration $i" curl -fsS -X POST "$BASE_URL/api/rooms" >/dev/null
+    if probe_json="$(curl -fsS -X POST "$BASE_URL/api/rooms")"; then
+      probe_room_id="$(printf '%s\n' "$probe_json" | parse_room_id)"
+      if [ -n "$probe_room_id" ]; then
+        room_id="$probe_room_id"
+        room_probe_required=0
+        printf 'adopted recovered roomId %s during create room probe iteration %s\n' "$room_id" "$i" >&2
+      elif allow_failure; then
+        printf 'create room probe iteration %s returned no roomId; keeping synthetic room id\n' "$i" >&2
+      else
+        printf 'failed to parse roomId from create room probe iteration %s response:\n%s\n' "$i" "$probe_json" >&2
+        exit 1
+      fi
+    else
+      run_request "create room probe iteration $i" false
+    fi
   fi
 
   run_request "create clip iteration $i" curl -fsS -X POST "$BASE_URL/api/clips" \

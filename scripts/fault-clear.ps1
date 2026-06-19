@@ -18,10 +18,16 @@ if ($SkipCompose.IsPresent -or $skipComposeEnv -in @("1", "true", "TRUE", "True"
     return
 }
 
-docker compose up -d mysql mysqld-exporter setlog
+docker compose up -d mysql mysqld-exporter setlog setlog-netem
 
 if ($LASTEXITCODE -ne 0) {
-    throw "failed to ensure mysql, mysqld-exporter, and setlog are running"
+    throw "failed to ensure mysql, mysqld-exporter, setlog, and setlog-netem are running"
 }
 
-Write-Host "cleared app faults and ensured mysql, mysqld-exporter, and setlog are running"
+docker compose restart setlog-netem
+
+if ($LASTEXITCODE -ne 0) {
+    throw "failed to restart setlog-netem after setlog recovery"
+}
+
+Write-Host "cleared app faults and ensured mysql, mysqld-exporter, setlog, and setlog-netem are running"

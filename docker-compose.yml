@@ -62,11 +62,13 @@ services:
         condition: service_healthy
     environment:
       BASE_URL: http://setlog:8080
-      BASELINE_LOOP_COUNT: "480"
+      BASELINE_LOOP_WORKERS: "3"
+      BASELINE_LOOP_COUNT: "160"
       BASELINE_LOOP_SLEEP_SECONDS: "0.03"
       BASELINE_LOOP_PAUSE_SECONDS: "3"
       RENDER_EVERY: "4"
       ALLOW_FAILURES: "1"
+      BASELINE_CLEAR_FAULTS_ON_START: "${BASELINE_CLEAR_FAULTS_ON_START:-0}"
     volumes:
       - ./scripts:/scripts:ro
     entrypoint:
@@ -74,7 +76,11 @@ services:
     command:
       - -ec
       - |
-        FAULT_CLEAR_SKIP_COMPOSE=1 BASE_URL=http://setlog:8080 sh /scripts/fault-clear.sh
+        if [ "$${BASELINE_CLEAR_FAULTS_ON_START}" = "1" ] || [ "$${BASELINE_CLEAR_FAULTS_ON_START}" = "true" ] || [ "$${BASELINE_CLEAR_FAULTS_ON_START}" = "TRUE" ]; then
+          FAULT_CLEAR_SKIP_COMPOSE=1 BASE_URL=http://setlog:8080 sh /scripts/fault-clear.sh
+        else
+          printf 'baseline traffic preserving existing app fault state; set BASELINE_CLEAR_FAULTS_ON_START=1 to clear on start\n'
+        fi
         sh /scripts/baseline-loop.sh
     restart: unless-stopped
 

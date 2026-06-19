@@ -12,7 +12,7 @@
 docker compose up --build -d
 ```
 
-Compose는 `setlog`가 healthy가 된 뒤 `baseline-traffic` 서비스를 시작합니다. 이 서비스는 남아 있는 app fault를 먼저 지우고 정상 SetLog 트래픽을 계속 만들어 Prometheus에 baseline 시계열을 쌓습니다.
+Compose는 `setlog`가 healthy가 된 뒤 `baseline-traffic` 서비스를 시작합니다. 이 서비스는 정상 SetLog 트래픽을 계속 만들어 Prometheus에 baseline 시계열을 쌓습니다. 남아 있는 app fault를 지워야 하는 실습 시작점에서는 `sh scripts/fault-clear.sh`를 명시적으로 실행합니다.
 
 Prometheus target 페이지를 엽니다.
 

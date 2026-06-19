@@ -49,7 +49,7 @@ flowchart TD
 | **grafana** | `grafana/grafana-oss` | `3000` | Prometheus 데이터소스 조회 + SRE301 대시보드 |
 
 ## 비고
-- **기동 순서(`depends_on`):** setlog·mysqld-exporter는 mysql `service_healthy` 대기, baseline traffic은 setlog-netem health 대기, Prometheus/Grafana는 그 뒤에 기동. 자동 baseline은 평균 약 30 QPS를 목표로 한다.
+- **기동 순서(`depends_on`):** setlog·mysqld-exporter는 mysql `service_healthy` 대기, baseline traffic은 setlog-netem health 대기, Prometheus/Grafana는 그 뒤에 기동. 자동 baseline은 여러 worker로 상시 SetLog 트래픽을 만든다.
 - **제약:** setlog 컨테이너는 CPU 1 core, memory 512MiB, `/tmp` 96MiB tmpfs, egress 20mbit 기본 제한을 가진다.
 - **cAdvisor:** Docker Desktop 29.x의 containerd-backed Docker storage를 읽기 위해 `/rootfs/run/containerd/containerd.sock`를 명시하고 Docker handler 기준(`--docker_only=true`)으로 Compose service label을 수집한다. `node-exporter`는 제거하지 않고 host/machine context용으로 유지한다.
 - **볼륨:** named volume `mysql_data`·`prometheus_data`·`grafana_data` + 설정 파일은 호스트 bind-mount(`:ro`).

@@ -95,6 +95,46 @@ class Sre301DemoApplicationTests {
     }
 
     @Test
+    void dbPoolFaultHolderEventuallyStopsInsteadOfReacquiringForever() throws InterruptedException {
+        ResponseEntity<String> response = restTemplate.postForEntity(
+            "/internal/faults/db-pool",
+            Map.of("enabled", true, "holders", 1, "holdMillis", 1000),
+            String.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        String status = "";
+        for (int attempt = 0; attempt < 20; attempt++) {
+            status = restTemplate.getForObject("/internal/faults", String.class);
+            if (status != null && status.contains("\"dbPoolActive\":false")) {
+                break;
+            }
+            Thread.sleep(150);
+        }
+
+        assertThat(status).contains("\"dbPoolActive\":false");
+    }
+
+    @Test
+    void resetReturnsImmediatelyWhileDbPoolHolderIsSleeping() {
+        ResponseEntity<String> response = restTemplate.postForEntity(
+            "/internal/faults/db-pool",
+            Map.of("enabled", true, "holders", 1, "holdMillis", 60000),
+            String.class
+        );
+
+        Instant startedAt = Instant.now();
+        restTemplate.delete("/internal/faults");
+        Duration elapsed = Duration.between(startedAt, Instant.now());
+        String status = restTemplate.getForObject("/internal/faults", String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(elapsed).isLessThan(Duration.ofSeconds(2));
+        assertThat(status).contains("\"dbPoolActive\":false");
+    }
+
+    @Test
     void renderFaultValidationReturnsExplicitBadRequest() {
         ResponseEntity<String> response = restTemplate.postForEntity(
             "/internal/faults/render",

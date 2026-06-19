@@ -7,7 +7,7 @@
 
 ## Baseline 트래픽 생성
 
-`docker compose up --build -d`를 실행하면 `baseline-traffic` 서비스가 자동으로 시작됩니다. 이 서비스는 app fault 상태를 먼저 reset한 뒤 `POST /api/rooms`, `POST /api/clips`, `POST /api/render-jobs`, `GET /api/feed`를 약 30 QPS 수준으로 반복 호출합니다.
+`docker compose up --build -d`를 실행하면 `baseline-traffic` 서비스가 자동으로 시작됩니다. 이 서비스는 `POST /api/rooms`, `POST /api/clips`, `POST /api/render-jobs`, `GET /api/feed`를 여러 worker로 반복 호출합니다. app fault 상태는 자동으로 reset하지 않으므로, 깨끗한 시작점이 필요하면 `sh scripts/fault-clear.sh`를 먼저 실행합니다.
 
 자동 baseline loop 상태는 아래처럼 확인합니다.
 
@@ -15,13 +15,7 @@
 docker compose logs baseline-traffic --tail=50
 ```
 
-패널을 더 빨리 채우고 싶을 때만 수동으로 추가 트래픽을 보냅니다.
-
-| 환경 | 명령 |
-|---|---|
-| macOS, Linux, WSL, Git Bash | `sh scripts/baseline-traffic.sh` |
-| PowerShell | `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\baseline-traffic.ps1` |
-| cmd | `scripts\baseline-traffic.cmd` |
+Incident 실습과 회복 검증은 이 상시 baseline 트래픽을 전제로 한다. 별도 트래픽 명령을 실행하지 않는다.
 
 ## 기록할 값
 

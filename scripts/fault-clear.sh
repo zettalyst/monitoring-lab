@@ -14,6 +14,7 @@ if [ "$FAULT_CLEAR_SKIP_COMPOSE" = "1" ] || [ "$FAULT_CLEAR_SKIP_COMPOSE" = "tru
   exit 0
 fi
 
-docker compose up -d mysql mysqld-exporter setlog
+docker compose up -d mysql mysqld-exporter setlog setlog-netem
+docker compose restart setlog-netem
 
-printf 'cleared app faults and ensured mysql, mysqld-exporter, and setlog are running\n'
+printf 'cleared app faults and ensured mysql, mysqld-exporter, setlog, and setlog-netem are running\n'

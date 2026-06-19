@@ -26,14 +26,6 @@ function Get-IncidentScrapeWaitSeconds {
     return Get-LabDouble -Value $null -EnvName "INCIDENT_SCRAPE_WAIT_SECONDS" -Default 8
 }
 
-function Test-IncidentValidationEnabled {
-    return Get-LabBool -EnvName "INCIDENT_VALIDATE" -Default $true
-}
-
-function Test-IncidentAutoTuneEnabled {
-    return Get-LabBool -EnvName "INCIDENT_AUTO_TUNE" -Default $true
-}
-
 function Get-PrometheusValue {
     param(
         [Parameter(Mandatory = $true)]
