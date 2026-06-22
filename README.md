@@ -155,14 +155,14 @@ Incident 시작:
 macOS, Linux, WSL, Git Bash:
 
 ```sh
-docker run --rm -v "$PWD/demo-service:/workspace" -w /workspace gradle:8.14.3-jdk21 gradle --no-daemon test
+docker run --rm -v "$PWD/demo-service:/workspace" -w /workspace gradle:9.5.1-jdk21 gradle --no-daemon test
 docker compose config
 python3 scripts/sync-bear-sources.py --check
 python3 scripts/sync-bear-sources.py --check --include-answers
 python3 scripts/verify-setlog-assets.py --dashboard-rules-out /tmp/setlog-dashboard-rules.yml
 python3 -m json.tool grafana/dashboards/setlog/golden-signals.json >/tmp/setlog-dashboard.json
-docker run --rm -v "$PWD/prometheus:/etc/prometheus:ro" --entrypoint promtool prom/prometheus check config /etc/prometheus/prometheus.yml
-docker run --rm -v /tmp/setlog-dashboard-rules.yml:/tmp/setlog-dashboard-rules.yml:ro --entrypoint promtool prom/prometheus check rules /tmp/setlog-dashboard-rules.yml
+docker run --rm -v "$PWD/prometheus:/etc/prometheus:ro" --entrypoint promtool prom/prometheus:v3.12.0 check config /etc/prometheus/prometheus.yml
+docker run --rm -v /tmp/setlog-dashboard-rules.yml:/tmp/setlog-dashboard-rules.yml:ro --entrypoint promtool prom/prometheus:v3.12.0 check rules /tmp/setlog-dashboard-rules.yml
 docker compose up --build -d
 ```
 
@@ -177,7 +177,7 @@ sh scripts/verify-live-mitigation.sh
 PowerShell:
 
 ```powershell
-docker run --rm -v "${PWD}\demo-service:/workspace" -w /workspace gradle:8.14.3-jdk21 gradle --no-daemon test
+docker run --rm -v "${PWD}\demo-service:/workspace" -w /workspace gradle:9.5.1-jdk21 gradle --no-daemon test
 docker compose config
 Get-Content -Raw .\grafana\dashboards\setlog\golden-signals.json | ConvertFrom-Json | Out-Null
 docker compose up --build -d
@@ -186,7 +186,7 @@ docker compose up --build -d
 cmd:
 
 ```bat
-docker run --rm -v "%cd%\demo-service:/workspace" -w /workspace gradle:8.14.3-jdk21 gradle --no-daemon test
+docker run --rm -v "%cd%\demo-service:/workspace" -w /workspace gradle:9.5.1-jdk21 gradle --no-daemon test
 docker compose config
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Content -Raw .\grafana\dashboards\setlog\golden-signals.json | ConvertFrom-Json | Out-Null"
 docker compose up --build -d

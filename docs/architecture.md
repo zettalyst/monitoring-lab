@@ -45,12 +45,12 @@ flowchart TD
 | **setlog** | `./demo-service` (Spring Boot · JDK21) | `8080` | SetLog API(`/api/*`) + 장애주입(`/internal/faults/*`) + 메트릭(`/actuator/prometheus`) |
 | **baseline-traffic** | `curlimages/curl` | - | 정상 SetLog 사용자 여정 트래픽을 계속 생성 |
 | **setlog-netem** | `nicolaka/netshoot` | - | `tc`로 setlog 컨테이너 egress bandwidth 제한 |
-| **mysql** | `mysql:8.4` | `3306` | setlog 서비스의 DB(`setlog`), healthcheck로 기동 게이트 |
-| **mysqld-exporter** | `prom/mysqld-exporter:v0.14.0` | `9104` | MySQL global_status·innodb 메트릭 노출 |
-| **node-exporter** | `prom/node-exporter` | `9100` | host/machine context용 CPU/디스크/파일시스템 메트릭 |
-| **cadvisor** | `ghcr.io/google/cadvisor:v0.57.0` | `8081 -> 8080` | Docker container CPU/memory/filesystem I/O/network 메트릭 |
-| **prometheus** | `prom/prometheus` | `9090` | 5개 타깃 스크레이프(5s) + SetLog 알림 룰 평가 |
-| **grafana** | `grafana/grafana-oss` | `3000` | Prometheus 데이터소스 조회 + SetLog 대시보드 |
+| **mysql** | `mysql:8.4.10` | `3306` | setlog 서비스의 DB(`setlog`), healthcheck로 기동 게이트 |
+| **mysqld-exporter** | `prom/mysqld-exporter:v0.19.0` | `9104` | MySQL global_status·innodb 메트릭 노출 |
+| **node-exporter** | `prom/node-exporter:v1.11.1` | `9100` | host/machine context용 CPU/디스크/파일시스템 메트릭 |
+| **cadvisor** | `ghcr.io/google/cadvisor:v0.60.1` | `8081 -> 8080` | Docker container CPU/memory/filesystem I/O/network 메트릭 |
+| **prometheus** | `prom/prometheus:v3.12.0` | `9090` | 5개 타깃 스크레이프(5s) + SetLog 알림 룰 평가 |
+| **grafana** | `grafana/grafana:13.0.2` | `3000` | Prometheus 데이터소스 조회 + SetLog 대시보드 |
 
 ## 비고
 - **기동 순서(`depends_on`):** setlog·mysqld-exporter는 mysql `service_healthy` 대기, baseline traffic은 setlog-netem health 대기, Prometheus/Grafana는 그 뒤에 기동. 자동 baseline은 여러 worker로 상시 SetLog 트래픽을 만든다.

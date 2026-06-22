@@ -8,7 +8,7 @@ run_promtool() {
       -v "$PWD/prometheus:/etc/prometheus:ro" \
       -v "$PWD:/workspace:ro" \
       --entrypoint promtool \
-      prom/prometheus "$@"
+      prom/prometheus:v3.12.0 "$@"
   fi
 }
 
@@ -34,7 +34,7 @@ elif command -v python >/dev/null 2>&1; then
     python -m json.tool "$dashboard" >/tmp/setlog-dashboard.json
   done
 else
-  docker run --rm -v "$PWD:/workspace" -w /workspace python:3.12-alpine \
+  docker run --rm -v "$PWD:/workspace" -w /workspace python:3.12.13-alpine \
     sh -c 'find grafana/dashboards -maxdepth 2 -type f -name "*.json" | while IFS= read -r dashboard; do python -m json.tool "$dashboard" >/tmp/setlog-dashboard.json; done'
 fi
 
@@ -50,6 +50,6 @@ for script in scripts/*.sh; do
 done
 
 printf 'running Dockerized Gradle tests\n'
-docker run --rm -v "$PWD/demo-service:/workspace" -w /workspace gradle:8.14.3-jdk21 gradle --no-daemon test
+docker run --rm -v "$PWD/demo-service:/workspace" -w /workspace gradle:9.5.1-jdk21 gradle --no-daemon test
 
 printf 'verification complete\n'

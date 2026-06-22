@@ -26,7 +26,7 @@ services:
     restart: unless-stopped
 
   setlog-netem:
-    image: nicolaka/netshoot:latest
+    image: nicolaka/netshoot:v0.15
     depends_on:
       setlog:
         condition: service_healthy
@@ -54,7 +54,7 @@ services:
     restart: unless-stopped
 
   baseline-traffic:
-    image: curlimages/curl:8.11.1
+    image: curlimages/curl:8.20.0
     depends_on:
       setlog:
         condition: service_healthy
@@ -85,7 +85,7 @@ services:
     restart: unless-stopped
 
   mysql:
-    image: mysql:8.4
+    image: mysql:8.4.10
     cpus: "0.75"
     mem_limit: 768m
     mem_reservation: 384m
@@ -107,12 +107,14 @@ services:
     restart: unless-stopped
 
   mysqld-exporter:
-    image: prom/mysqld-exporter:v0.14.0
+    image: prom/mysqld-exporter:v0.19.0
     command:
+      - --mysqld.address=mysql:3306
+      - --mysqld.username=exporter
       - --collect.global_status
       - --collect.info_schema.innodb_metrics
     environment:
-      DATA_SOURCE_NAME: exporter:exporter@(mysql:3306)/
+      MYSQLD_EXPORTER_PASSWORD: exporter
     depends_on:
       mysql:
         condition: service_healthy
@@ -121,7 +123,7 @@ services:
     restart: unless-stopped
 
   prometheus:
-    image: prom/prometheus
+    image: prom/prometheus:v3.12.0
     depends_on:
       - setlog
       - cadvisor
@@ -136,13 +138,13 @@ services:
     restart: unless-stopped
 
   node-exporter:
-    image: prom/node-exporter
+    image: prom/node-exporter:v1.11.1
     ports:
       - "9100:9100"
     restart: unless-stopped
 
   cadvisor:
-    image: ghcr.io/google/cadvisor:v0.57.0
+    image: ghcr.io/google/cadvisor:v0.60.1
     command:
       - --containerd=/rootfs/run/containerd/containerd.sock
       - --docker_only=true
@@ -161,7 +163,7 @@ services:
     restart: unless-stopped
 
   grafana:
-    image: grafana/grafana-oss
+    image: grafana/grafana:13.0.2
     depends_on:
       - prometheus
       - setlog
