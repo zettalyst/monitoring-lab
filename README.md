@@ -158,13 +158,14 @@ macOS, Linux, WSL, Git Bash:
 docker run --rm -v "$PWD/demo-service:/workspace" -w /workspace gradle:9.5.1-jdk21 gradle --no-daemon test
 docker compose config
 python3 scripts/sync-bear-sources.py --check
-python3 scripts/sync-bear-sources.py --check --include-answers
 python3 scripts/verify-setlog-assets.py --dashboard-rules-out /tmp/setlog-dashboard-rules.yml
 python3 -m json.tool grafana/dashboards/setlog/golden-signals.json >/tmp/setlog-dashboard.json
 docker run --rm -v "$PWD/prometheus:/etc/prometheus:ro" --entrypoint promtool prom/prometheus:v3.12.0 check config /etc/prometheus/prometheus.yml
 docker run --rm -v /tmp/setlog-dashboard-rules.yml:/tmp/setlog-dashboard-rules.yml:ro --entrypoint promtool prom/prometheus:v3.12.0 check rules /tmp/setlog-dashboard-rules.yml
 docker compose up --build -d
 ```
+
+`answers/`는 main에서 ignored optional artifact입니다. 로컬에 Bear 정답 mirror를 생성한 경우에만 `python3 scripts/sync-bear-sources.py --check --include-answers`를 추가로 실행합니다.
 
 Incident 1~4가 실제 Grafana/Prometheus 신호와 맞게 주입되는지 확인하려면 Docker stack smoke를 별도로 실행합니다.
 

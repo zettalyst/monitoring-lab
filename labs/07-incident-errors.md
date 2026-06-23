@@ -35,7 +35,7 @@ Grafana에서 먼저 `I2 Page: API 5xx Ratio`와 `I2 Impact: Traffic and Status 
 - [I2 Page: API 5xx Ratio](http://localhost:3000/d/setlog-incident-response/setlog-incident-response?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=201)
 - [I2 Impact: Traffic and Status by API](http://localhost:3000/d/setlog-incident-response/setlog-incident-response?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=202)
 - [I2 Domain: Clip Upload Success vs Failure](http://localhost:3000/d/setlog-incident-response/setlog-incident-response?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=203)
-- [I2 Diagnostic: MySQL Dependency](http://localhost:3000/d/setlog-incident-response/setlog-incident-response?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=204)
+- [I2 Diagnostic: MySQL Dependency Up](http://localhost:3000/d/setlog-incident-response/setlog-incident-response?orgId=1&from=now-15m&to=now&refresh=5s&viewPanel=204)
 - [Alert: setlog-i2-too-many-5xx](http://localhost:3000/alerting/grafana/setlog-i2-too-many-5xx/view?orgId=1)
 
 | 구분 | 볼 것 | 질문 |
